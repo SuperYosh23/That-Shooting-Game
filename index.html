@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>That Shooting Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            color: #e2e8f0; /* Tailwind gray-300 */
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars from canvas */
+        }
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #4a5568; /* Tailwind gray-600 */
+            border-radius: 0.75rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.1); /* Deeper shadow */
+            background-color: #2d3748; /* Tailwind gray-800 */
+            overflow: hidden; /* Ensure rounded corners clip content */
+        }
+        canvas {
+            display: block;
+            background-color: #000;
+            /* Rounded corners are handled by gameContainer overflow: hidden */
+        }
+        #uiContainer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to bottom, #2d3748, #1a202c); /* Gradient background */
+            border-bottom: 1px solid #4a5568; /* Subtle border */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Shadow for depth */
+            /* Rounded corners are handled by gameContainer overflow: hidden */
+        }
+        #scoreBoard, #livesCount {
+            font-size: 1.25rem; /* Slightly larger */
+            font-weight: 700; /* Bolder */
+            color: #cbd5e0; /* Lighter gray */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Text shadow for depth */
+        }
+        #messageDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(30, 41, 59, 0.95); /* Darker, more opaque */
+            color: #e2e8f0;
+            padding: 2.5rem 3rem; /* More padding */
+            border-radius: 0.75rem; /* More rounded */
+            text-align: center;
+            font-size: 1.8rem; /* Larger font */
+            font-weight: 600;
+            z-index: 10;
+            display: none;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); /* Deeper shadow */
+            border: 1px solid #4a5568; /* Subtle border */
+        }
+        #messageDisplay button {
+            margin-top: 1.5rem; /* More margin */
+            padding: 0.75rem 1.75rem; /* Larger padding */
+            font-size: 1.1rem; /* Slightly larger font */
+            background: linear-gradient(to right, #4299e1, #63b3ed); /* Gradient button */
+            color: white;
+            border: none;
+            border-radius: 0.5rem; /* More rounded */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        #messageDisplay button:hover {
+            background: linear-gradient(to right, #3182ce, #4299e1); /* Darker gradient on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        #messageDisplay button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .touch-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 350px; /* Slightly wider touch controls */
+            z-index: 20;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem; /* Space between buttons */
+        }
+        .touch-controls button {
+            background: linear-gradient(to bottom, #4a5568, #2d3748); /* Gradient */
+            color: white;
+            border: 2px solid #a0aec0; /* More prominent border */
+            border-radius: 50%;
+            width: 70px; /* Larger buttons */
+            height: 70px;
+            font-size: 28px; /* Larger icon */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.4); /* Deeper shadow */
+            transition: all 0.2s ease-in-out;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .touch-controls button:active {
+            background: linear-gradient(to bottom, #2d3748, #1a202c); /* Darker on active */
+            transform: scale(0.9); /* More noticeable press */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .touch-controls {
+                display: flex;
+            }
+        }
+
+        /* Shop specific styles */
+        #shopDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(30, 41, 59, 0.98); /* Even darker, more opaque */
+            color: #e2e8f0;
+            padding: 2.5rem 3rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 1.3rem; /* Slightly larger */
+            z-index: 15;
+            display: none;
+            width: 85%; /* Wider */
+            max-width: 450px; /* Max width increased */
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid #4a5568;
+        }
+
+        #shopDisplay h2 {
+            font-size: 2.2rem; /* Larger heading */
+            font-weight: bold;
+            margin-bottom: 2rem; /* More space */
+            color: #a0aec0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #shopItemsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem; /* More space between items */
+        }
+
+        .shop-item-button {
+            background: linear-gradient(to right, #63b3ed, #4299e1); /* Gradient */
+            color: #1a202c;
+            padding: 0.85rem 1.75rem; /* Larger padding */
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.2rem; /* Larger font */
+            font-weight: 700;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .shop-item-button:hover {
+            background: linear-gradient(to right, #4299e1, #3182ce); /* Darker gradient on hover */
+            transform: translateY(-3px); /* More noticeable lift */
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+
+        .shop-item-button:disabled {
+            background: linear-gradient(to right, #718096, #5a67d8); /* Grayish gradient for disabled */
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .shop-item-button .ml-4 { /* Targeting the Buy button inside shop item */
+            background: linear-gradient(to right, #48bb78, #38a169); /* Green gradient */
+            color: white;
+            padding: 0.6rem 1.2rem; /* Adjusted padding for nested button */
+            border-radius: 0.4rem;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .shop-item-button .ml-4:hover:enabled { /* Only apply hover if not disabled */
+            background: linear-gradient(to right, #38a169, #2f855a);
+            transform: translateY(-1px);
+        }
+        .shop-item-button .ml-4:active:enabled {
+            transform: translateY(0);
+        }
+
+        #closeShopBtn {
+            margin-top: 2.5rem; /* More margin */
+            padding: 0.75rem 2.25rem; /* Larger padding */
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #e53e3e, #c53030); /* Red gradient */
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        #closeShopBtn:hover {
+            background: linear-gradient(to right, #c53030, #9b2c2c); /* Darker red gradient on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        #closeShopBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="uiContainer">
+            <div id="scoreBoard">Score: 0</div>
+            <button id="shopButton" class="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 transition-colors">Shop</button>
+            <div id="livesCount">Lives: 3</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="messageDisplay">
+        <p id="messageText"></p>
+        <button id="startButton" class="hidden">Start Game</button>
+        <button id="restartButton" class="hidden">Restart Game</button>
+    </div>
+
+    <div id="shopDisplay" class="hidden">
+        <h2>Shop</h2>
+        <div id="shopItemsContainer">
+            </div>
+        <p class="mt-4 text-lg">Your Score: <span id="shopScore" class="font-bold text-yellow-300">0</span></p>
+        <button id="closeShopBtn">Close Shop</button>
+    </div>
+
+    <div class="touch-controls">
+        <button id="touchLeftBtn">◀</button>
+        <button id="touchShootBtn">💥</button>
+        <button id="touchRightBtn">▶</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const livesCount = document.getElementById('livesCount');
+        const messageDisplay = document.getElementById('messageDisplay');
+        const messageText = document.getElementById('messageText');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+
+        // Shop elements
+        const shopDisplay = document.getElementById('shopDisplay');
+        const shopItemsContainer = document.getElementById('shopItemsContainer');
+        const shopScoreDisplay = document.getElementById('shopScore');
+        const closeShopBtn = document.getElementById('closeShopBtn');
+        const shopButton = document.getElementById('shopButton'); // Reference to the new shop button
+
+        // Touch controls
+        const touchLeftBtn = document.getElementById('touchLeftBtn');
+        const touchRightBtn = document.getElementById('touchRightBtn');
+        const touchShootBtn = document.getElementById('touchShootBtn');
+
+        let gameWidth, gameHeight;
+
+        // Game state variables
+        let score = 0;
+        let lives = 3;
+        let gameRunning = false; // Game starts as false, waiting for user to press start
+        let shopOpen = false; // New state for shop visibility
+        let animationFrameId;
+
+        // Player properties
+        const player = {
+            x: 0, // Will be set in resizeCanvas
+            y: 0, // Will be set in resizeCanvas
+            width: 50,
+            height: 50, // Increased height for more detail
+            color: '#4299e1', // Base color
+            draw: function() {
+                // Main body gradient
+                const bodyGradient = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y + this.height);
+                bodyGradient.addColorStop(0, '#4299e1'); // Blue-500
+                bodyGradient.addColorStop(0.5, '#63b3ed'); // Blue-300
+                bodyGradient.addColorStop(1, '#4299e1');
+                ctx.fillStyle = bodyGradient;
+
+                ctx.beginPath();
+                // Main body
+                ctx.moveTo(this.x + this.width / 2, this.y); // Top point
+                ctx.lineTo(this.x + this.width * 0.1, this.y + this.height * 0.7); // Left side, mid-bottom
+                ctx.lineTo(this.x + this.width * 0.2, this.y + this.height); // Bottom-left tip
+                ctx.lineTo(this.x + this.width * 0.8, this.y + this.height); // Bottom-right tip
+                ctx.lineTo(this.x + this.width * 0.9, this.y + this.height * 0.7); // Right side, mid-bottom
+                ctx.closePath();
+                ctx.fill();
+
+                // Cockpit
+                ctx.fillStyle = '#a78bfa'; // Purple-300
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height * 0.4, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Thrusters (simple rectangles for now)
+                ctx.fillStyle = '#f56565'; // Red-500 for thruster glow
+                ctx.fillRect(this.x + this.width * 0.3, this.y + this.height - 5, this.width * 0.15, 10);
+                ctx.fillRect(this.x + this.width * 0.55, this.y + this.height - 5, this.width * 0.15, 10);
+
+                // Exhaust glow (more dynamic)
+                if (gameRunning) { // Only show exhaust when game is active
+                    const exhaustHeight = Math.random() * 10 + 5; // Vary height
+                    const exhaustGradient = ctx.createLinearGradient(this.x, this.y + this.height, this.x, this.y + this.height + exhaustHeight);
+                    exhaustGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)'); // Orange
+                    exhaustGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)'); // Yellow
+                    exhaustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Transparent
+                    ctx.fillStyle = exhaustGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width * 0.3, this.y + this.height);
+                    ctx.lineTo(this.x + this.width * 0.2, this.y + this.height + exhaustHeight);
+                    ctx.lineTo(this.x + this.width * 0.8, this.y + this.height + exhaustHeight);
+                    ctx.lineTo(this.x + this.width * 0.7, this.y + this.height);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            },
+            speed: 7,
+            dx: 0 // For touch controls and keyboard
+        };
+
+        // Bullet properties
+        const bullets = [];
+        const bulletProps = {
+            width: 5,
+            height: 15,
+            color: '#f56565', // Base color
+            draw: function(bullet) {
+                // Draw a slightly rounded bullet with a brighter core and a trail
+                ctx.fillStyle = this.color;
+                ctx.fillRect(bullet.x, bullet.y, this.width, this.height);
+                ctx.fillStyle = '#ff7777'; // Brighter core
+                ctx.fillRect(bullet.x + 1, bullet.y + 2, this.width - 2, this.height - 4);
+
+                // Simple trail effect
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.5)'; // Orange-yellow transparent
+                ctx.fillRect(bullet.x, bullet.y + this.height, this.width, this.height * 0.5);
+            },
+            speed: 10,
+            cooldown: 250, // milliseconds
+            lastShotTime: 0
+        };
+
+        // Enemy properties
+        const enemies = [];
+        const enemyProps = {
+            width: 40,
+            height: 30, // Changed height for a different look
+            colors: ['#48bb78', '#38a169', '#68d391'], // Array of green shades
+            draw: function(enemy) {
+                const color = enemy.color || this.colors [0]; // Use specific color or default
+                ctx.fillStyle = color;
+
+                // Main body (hexagonal)
+                ctx.beginPath();
+                ctx.moveTo(enemy.x + this.width / 2, enemy.y); // Top
+                ctx.lineTo(enemy.x, enemy.y + this.height * 0.3); // Top-left
+                ctx.lineTo(enemy.x, enemy.y + this.height * 0.7); // Bottom-left
+                ctx.lineTo(enemy.x + this.width / 2, enemy.y + this.height); // Bottom
+                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.7); // Bottom-right
+                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.3); // Top-right
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner segments/details
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; // Dark outline
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Central 'eye' with glow
+                const eyeCenterX = enemy.x + this.width / 2;
+                const eyeCenterY = enemy.y + this.height / 2;
+                const eyeRadius = 8;
+
+                // Glow effect
+                const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
+                glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)'); // Bright yellow center
+                glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)'); // Transparent yellow outer
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Main eye
+                ctx.fillStyle = '#f7fafc'; // Tailwind gray-100
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#2d3748'; // Dark pupil
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            },
+            speed: 2,
+            spawnInterval: 1500, // milliseconds
+            lastSpawnTime: 0
+        };
+
+        // Background Stars
+        const stars = [];
+        const numStars = 150;
+
+        // New flash effect properties
+        const flashEffect = {
+            active: false,
+            color: 'rgba(255, 0, 0, 0.3)', // Semi-transparent red
+            duration: 200, // milliseconds
+            startTime: 0
+        };
+
+        // Shop items definition
+        const shopItems = {
+            'bulletSpeed': {
+                id: 'bulletSpeed',
+                name: 'Faster Bullets',
+                baseCost: 100,
+                currentLevel: 0,
+                maxLevel: 3,
+                effect: () => { bulletProps.speed += 2; },
+                description: 'Increases bullet speed by 2.',
+                getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.5)); },
+                getDisplayName: function() {
+                    return this.currentLevel < this.maxLevel ?
+                        `${this.name} (Lv.${this.currentLevel + 1})` :
+                        `${this.name} (Max Lv.)`;
+                }
+            },
+            'extraLife': {
+                id: 'extraLife',
+                name: 'Extra Life',
+                baseCost: 200,
+                currentLevel: 0, // Track how many lives bought
+                effect: () => { lives++; updateLivesDisplay(); },
+                description: 'Gain 1 extra life.',
+                getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.25)); },
+                getDisplayName: function() { return this.name; } // No level display for lives
+            },
+            'playerSpeed': {
+                id: 'playerSpeed',
+                name: 'Player Speed',
+                baseCost: 150,
+                currentLevel: 0,
+                maxLevel: 2,
+                effect: () => { player.speed += 1; },
+                description: 'Increases player movement speed by 1.',
+                getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.75)); },
+                getDisplayName: function() {
+                    return this.currentLevel < this.maxLevel ?
+                        `${this.name} (Lv.${this.currentLevel + 1})` :
+                        `${this.name} (Max Lv.)`;
+                }
+            }
+        };
+
+        /**
+         * Initializes the background stars with random positions, sizes, and speeds.
+         * Clears existing stars before creating new ones, useful on canvas resize.
+         */
+        function initializeStars() {
+            stars.length = 0; // Clear existing stars
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * gameWidth,
+                    y: Math.random() * gameHeight,
+                    radius: Math.random() * 2,
+                    alpha: Math.random() * 0.7 + 0.3, // Ensure stars are somewhat visible
+                    speed: Math.random() * 0.5 + 0.5 // Random speed for parallax effect
+                });
+            }
+        }
+
+        /**
+         * Draws the background stars on the canvas.
+         */
+        function drawStars() {
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1; // Reset alpha for other elements
+        }
+
+        /**
+         * Updates the position of each star, making them scroll down.
+         * If a star goes off-screen, it's repositioned at the top.
+         */
+        function updateStars() {
+            stars.forEach(star => {
+                star.y += star.speed;
+                // If star goes off bottom, reset to top
+                if (star.y > gameHeight) {
+                    star.y = 0;
+                    star.x = Math.random() * gameWidth; // Give it a new random x position
+                }
+            });
+        }
+
+        // --- Utility Functions ---
+        /**
+         * Resizes the canvas to fit the window while maintaining aspect ratio
+         * and updates player position.
+         */
+        function resizeCanvas() {
+            const uiHeight = document.getElementById('uiContainer').offsetHeight;
+
+            const maxWidth = 800;
+            const maxHeight = 600;
+
+            let newWidth = Math.min(maxWidth, window.innerWidth * 0.9);
+            let newHeight = Math.min(maxHeight, newWidth * (3/4)); // Maintain 4:3 aspect ratio
+
+            // Adjust if height is too large for the window
+            if (newHeight > (window.innerHeight - uiHeight - 50) ) {
+                newHeight = window.innerHeight - uiHeight - 50;
+                newWidth = newHeight * (4/3); // Recalculate width based on new height
+            }
+
+            // Ensure width doesn't exceed 90% of window width after height adjustment
+            newWidth = Math.min(newWidth, window.innerWidth * 0.9);
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            gameWidth = canvas.width;
+            gameHeight = canvas.height;
+
+            // Reposition player to center bottom
+            player.x = gameWidth / 2 - player.width / 2;
+            player.y = gameHeight - player.height - 20;
+
+            // Adjust message display font size based on canvas width for responsiveness
+            messageDisplay.style.fontSize = `${Math.max(16, canvas.width / 25)}px`;
+            shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`; // Adjust shop font size too
+
+            initializeStars(); // Re-initialize stars on resize to fill new canvas dimensions
+        }
+
+        // --- Drawing Functions ---
+        /**
+         * Draws the player's spaceship on the canvas.
+         */
+        function drawPlayer() {
+            player.draw(); // Use the player's custom draw method
+        }
+
+        /**
+         * Draws a single bullet on the canvas.
+         * @param {object} bullet - The bullet object with x, y properties.
+         */
+        function drawBullet(bullet) {
+            bulletProps.draw(bullet); // Use the bullet's custom draw method
+        }
+
+        /**
+         * Draws a single enemy on the canvas with simple eyes.
+         * @param {object} enemy - The enemy object with x, y properties.
+         */
+        function drawEnemy(enemy) {
+            enemyProps.draw(enemy); // Use the enemy's custom draw method
+        }
+
+        // --- Update Functions ---
+        /**
+         * Updates the player's position based on its current movement direction (dx).
+         * Clamps player position within canvas boundaries.
+         */
+        function updatePlayer() {
+            player.x += player.dx;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > gameWidth) player.x = gameWidth - player.width;
+        }
+
+        /**
+         * Updates the position of all active bullets.
+         * Removes bullets that go off-screen.
+         */
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets [i];
+                bullet.y -= bulletProps.speed;
+                if (bullet.y + bulletProps.height < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        /**
+         * Spawns a new enemy if enough time has passed since the last spawn.
+         * Gives the new enemy a random color from the enemyProps.colors array.
+         * Gradually decreases spawn interval to increase difficulty.
+         */
+        function spawnEnemy() {
+            const currentTime = Date.now();
+            if (currentTime - enemyProps.lastSpawnTime > enemyProps.spawnInterval) {
+                const x = Math.random() * (gameWidth - enemyProps.width);
+                const y = -enemyProps.height; // Spawn above canvas
+                const randomColor = enemyProps.colors [Math.floor(Math.random() * enemyProps.colors.length)];
+                enemies.push({ x, y, color: randomColor }); // Add random color to the enemy
+                enemyProps.lastSpawnTime = currentTime;
+                // Gradually increase difficulty by reducing spawn interval
+                if (enemyProps.spawnInterval > 500) { // Don't go below 0.5 seconds
+                    enemyProps.spawnInterval *= 0.99;
+                }
+            }
+        }
+
+        /**
+         * Updates the position of all active enemies.
+         * Removes enemies that go off-screen and reduces player lives.
+         */
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies [i];
+                enemy.y += enemyProps.speed;
+                if (enemy.y + enemyProps.height > gameHeight) {
+                    enemies.splice(i, 1);
+                    loseLife(); // Player loses a life if enemy passes by
+                }
+            }
+        }
+
+        // --- Collision Detection ---
+        /**
+         * Checks for collisions between bullets and enemies, and player and enemies.
+         */
+        function checkCollisions() {
+            // Bullet-Enemy collision
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const bullet = bullets [i];
+                    const enemy = enemies [j];
+                    // Check if bullet and enemy exist and if their bounding boxes overlap
+                    if (bullet && enemy &&
+                        bullet.x < enemy.x + enemyProps.width &&
+                        bullet.x + bulletProps.width > enemy.x &&
+                        bullet.y < enemy.y + enemyProps.height &&
+                        bullet.y + bulletProps.height > enemy.y
+                    ) {
+                        bullets.splice(i, 1); // Remove bullet
+                        enemies.splice(j, 1); // Remove enemy
+                        score += 10; // Increase score
+                        updateScoreDisplay();
+                        break; // Break inner loop as bullet is gone
+                    }
+                }
+            }
+
+            // Player-Enemy collision
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies [i];
+                // Check if player and enemy bounding boxes overlap
+                if (
+                    player.x < enemy.x + enemyProps.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemyProps.height &&
+                    player.y + player.height > enemy.y
+                ) {
+                    enemies.splice(i, 1); // Remove enemy
+                    loseLife(); // Player loses a life
+                    break; // Break loop as player can only collide with one enemy at a time for simplicity
+                }
+            }
+        }
+
+        // --- Game Logic ---
+        /**
+         * Creates a new bullet if the cooldown period has passed.
+         */
+        function shoot() {
+            const currentTime = Date.now();
+            if (currentTime - bulletProps.lastShotTime > bulletProps.cooldown) {
+                bullets.push({
+                    x: player.x + player.width / 2 - bulletProps.width / 2,
+                    y: player.y
+                });
+                bulletProps.lastShotTime = currentTime;
+            }
+        }
+
+        /**
+         * Updates the score display on the UI.
+         */
+        function updateScoreDisplay() {
+            scoreBoard.textContent = `Score: ${score}`;
+        }
+
+        /**
+         * Updates the lives display on the UI.
+         */
+        function updateLivesDisplay() {
+            livesCount.textContent = `Lives: ${lives}`;
+        }
+
+        /**
+         * Decreases player's life count and checks for game over.
+         * Also triggers screen flash, player reset, and score halving.
+         */
+        function loseLife() {
+            lives--;
+            updateLivesDisplay();
+
+            // Halve the score and update display
+            score = Math.floor(score / 2);
+            updateScoreDisplay();
+
+            // Reset player position to center
+            player.x = gameWidth / 2 - player.width / 2;
+
+            // Activate red flash effect
+            flashEffect.active = true;
+            flashEffect.startTime = Date.now();
+
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        /**
+         * Ends the game, displays game over message, and shows restart button.
+         */
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId); // Stop the game loop
+            messageText.textContent = `Game Over! Final Score: ${score}`;
+            messageDisplay.style.display = 'block'; // Show message box
+            restartButton.classList.remove('hidden'); // Show restart button
+            startButton.classList.add('hidden'); // Ensure start button is hidden
+        }
+
+        /**
+         * Resets game state and starts a new game.
+         */
+        function startGame() {
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            bullets.length = 0; // Clear all bullets
+            enemies.length = 0; // Clear all enemies
+            enemyProps.spawnInterval = 1500; // Reset spawn interval
+            enemyProps.lastSpawnTime = Date.now(); // Reset last spawn time
+            bulletProps.lastShotTime = 0; // Reset bullet cooldown
+            player.dx = 0; // Reset player movement
+
+            // Reset shop item levels for a new game
+            for (const key in shopItems) {
+                shopItems [key].currentLevel = 0;
+            }
+            // Reset player and bullet base stats for new game
+            player.speed = 7;
+            bulletProps.speed = 10;
+
+
+            updateScoreDisplay();
+            updateLivesDisplay();
+            resizeCanvas(); // Ensure canvas is sized correctly on start
+
+            messageDisplay.style.display = 'none'; // Hide message box
+            startButton.classList.add('hidden'); // Hide start button
+            restartButton.classList.add('hidden'); // Hide restart button
+
+            // If a previous animation frame exists, cancel it before starting a new one
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animationFrameId = requestAnimationFrame(gameLoopWithInput); // Start the main game loop
+        }
+
+        // --- Shop Functions ---
+        /**
+         * Opens the shop, pauses the game, and renders shop items.
+         */
+        function openShop() {
+            if (gameRunning) { // Only pause if game is running
+                gameRunning = false;
+                cancelAnimationFrame(animationFrameId); // Stop the game loop
+            }
+            shopOpen = true;
+            messageDisplay.style.display = 'none'; // Hide any other messages
+            shopDisplay.style.display = 'block'; // Show the shop
+            renderShopItems(); // Populate shop items
+        }
+
+        /**
+         * Closes the shop and resumes the game if it was running.
+         */
+        function closeShop() {
+            shopOpen = false;
+            shopDisplay.style.display = 'none'; // Hide the shop
+            if (!gameRunning) { // If game was paused for shop, resume it
+                gameRunning = true; // Set gameRunning to true before resuming loop
+                animationFrameId = requestAnimationFrame(gameLoopWithInput);
+            }
+        }
+
+        /**
+         * Renders shop items dynamically based on their current state (cost, level).
+         */
+        function renderShopItems() {
+            shopItemsContainer.innerHTML = ''; // Clear previous items
+            shopScoreDisplay.textContent = score; // Update current score in shop
+
+            for (const key in shopItems) {
+                const item = shopItems [key];
+                const itemCost = item.getCost();
+                const itemDisplayName = item.getDisplayName();
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'shop-item-button';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = itemDisplayName;
+                itemDiv.appendChild(nameSpan);
+
+                const costSpan = document.createElement('span');
+                costSpan.textContent = `${itemCost} pts`;
+                costSpan.classList.add('font-bold', 'text-yellow-300'); // Highlight cost
+                itemDiv.appendChild(costSpan);
+
+                const buyButton = document.createElement('button');
+                buyButton.textContent = 'Buy';
+                buyButton.className = 'ml-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors';
+                buyButton.onclick = () => buyItem(item.id);
+
+                // Disable button if not enough score or max level reached
+                if (score < itemCost || (item.maxLevel && item.currentLevel >= item.maxLevel)) {
+                    buyButton.disabled = true;
+                    buyButton.classList.remove('hover:bg-green-600');
+                    buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
+                }
+
+                itemDiv.appendChild(buyButton);
+                shopItemsContainer.appendChild(itemDiv);
+            }
+        }
+
+        /**
+         * Handles the purchase of an item from the shop.
+         * @param {string} itemId - The ID of the item to purchase.
+         */
+        function buyItem(itemId) {
+            const item = shopItems [itemId];
+            const itemCost = item.getCost();
+
+            if (score >= itemCost) {
+                score -= itemCost;
+                updateScoreDisplay();
+                item.effect(); // Apply the item's effect
+
+                if (item.currentLevel !== undefined) { // If it's a level-based upgrade
+                    item.currentLevel++;
+                }
+                renderShopItems(); // Re-render shop to update prices/disabled states
+            } else {
+                // This case should ideally be prevented by disabling the button
+                // but good for robustness or future temporary messages.
+                console.log("Not enough points!");
+            }
+        }
+
+        // --- Event Listeners ---
+        // Object to track keyboard key states (true if pressed, false if released)
+        const keyState = {};
+
+        window.addEventListener('keydown', (e) => {
+            keyState [e.key.toLowerCase()] = true;
+            // Prevent default behavior for spacebar to avoid scrolling
+            if (e.key === ' ' || e.key === 'spacebar') {
+                e.preventDefault();
+                if (gameRunning) shoot(); // Shoot only if game is running
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keyState [e.key.toLowerCase()] = false;
+        });
+
+        // Global flags for touch state, controlled by touch event listeners
+        let touchLeftActive = false;
+        let touchRightActive = false;
+
+        /**
+         * Handles player movement based on current keyboard and touch input states.
+         * This function is called every frame in the game loop.
+         */
+        function handleMovementInput() {
+            player.dx = 0; // Reset player movement for the current frame
+
+            // Apply movement based on active inputs
+            if (keyState['arrowleft'] || keyState['a'] || touchLeftActive) {
+                player.dx = -player.speed;
+            }
+            if (keyState['arrowright'] || keyState['d'] || touchRightActive) {
+                // If both left and right are active, right movement takes precedence.
+                // This creates a simple "override" behavior.
+                player.dx = player.speed;
+            }
+        }
+
+        // Main Game Loop that includes input handling and drawing
+        function gameLoopWithInput() {
+            if (!gameRunning || shopOpen) return; // Stop loop if game is not running or shop is open
+
+            handleMovementInput(); // Update player.dx based on current inputs
+
+            // Clear canvas for the next frame
+            ctx.fillStyle = '#000'; // Solid black background
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+            updateStars(); // Update star positions for scrolling
+            drawStars(); // Draw the background stars
+
+            // Update and draw player
+            updatePlayer();
+            drawPlayer();
+
+            // Spawn, update, and draw enemies
+            spawnEnemy();
+            updateEnemies();
+            enemies.forEach(drawEnemy);
+
+            // Update and draw bullets
+            updateBullets();
+            bullets.forEach(drawBullet);
+
+            // Check for and handle all collisions
+            checkCollisions();
+
+            // Draw red flash if active
+            if (flashEffect.active) {
+                ctx.fillStyle = flashEffect.color;
+                ctx.fillRect(0, 0, gameWidth, gameHeight);
+                if (Date.now() - flashEffect.startTime > flashEffect.duration) {
+                    flashEffect.active = false;
+                }
+            }
+
+            // Request the next animation frame to continue the loop
+            animationFrameId = requestAnimationFrame(gameLoopWithInput);
+        }
+
+        // --- Touch Controls Event Listeners ---
+        // Touch Left Button
+        touchLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchLeftActive = true; });
+        touchLeftBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchLeftActive = false; });
+        touchLeftBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchLeftActive = false; });
+
+        // Touch Right Button
+        touchRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchRightActive = true; });
+        touchRightBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchRightActive = false; });
+        touchRightBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchRightActive = false; });
+
+        // Touch Shoot Button
+        touchShootBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning) shoot(); // Shoot only if game is running
+        });
+
+        // Event listener for the start game button
+        startButton.addEventListener('click', startGame);
+        // Event listener for the restart game button (re-uses startGame function)
+        restartButton.addEventListener('click', startGame);
+        // Event listener for the shop button
+        shopButton.addEventListener('click', openShop);
+        // Event listener for the close shop button
+        closeShopBtn.addEventListener('click', closeShop);
+
+        // Event listener for window resize to make the game responsive
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            // If the game is not running (e.g., on game over screen), re-display the message
+            if (!gameRunning && !shopOpen) { // Also check if shop is not open
+                messageText.textContent = `Game Over! Final Score: ${score}`;
+                messageDisplay.style.display = 'block';
+            }
+            if (shopOpen) {
+                renderShopItems(); // Re-render shop items to update layout if needed
+            }
+        });
+
+        // --- Initialization on Window Load ---
+        window.onload = () => {
+            resizeCanvas(); // Set initial canvas size
+            updateScoreDisplay(); // Initialize score display
+            updateLivesDisplay(); // Initialize lives display
+            initializeStars(); // Initialize background stars
+
+            // Set up initial start screen message and button visibility
+            messageText.textContent = "Press Start to Play 'That Shooting Game'!"; // Updated game name
+            messageDisplay.style.display = 'block'; // Show message box
+            startButton.classList.remove('hidden'); // Show start button
+            restartButton.classList.add('hidden'); // Ensure restart button is hidden
+        };
+    </script>
+</body>
+</html>
