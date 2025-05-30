@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>That Shooting Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -24,14 +25,19 @@
             align-items: center;
             border: 2px solid #4a5568; /* Tailwind gray-600 */
             border-radius: 0.75rem; /* More rounded corners */
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.1); /* Deeper shadow */
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,10,0,0.1); /* Deeper shadow */
             background-color: #2d3748; /* Tailwind gray-800 */
             overflow: hidden; /* Ensure rounded corners clip content */
+            position: relative; /* Needed for absolute positioning of credits */
+            width: 95vw; /* Make container span almost full viewport width */
+            height: 95vh; /* Make container span almost full viewport height */
+            max-width: 1200px; /* Optional: set a max width if desired for very large screens */
+            max-height: 800px; /* Optional: set a max height if desired */
         }
         canvas {
             display: block;
             background-color: #000;
-            /* Rounded corners are handled by gameContainer overflow: hidden */
+            /* Canvas size will be set by JavaScript to fill gameContainer */
         }
         #uiContainer {
             display: flex;
@@ -44,7 +50,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Shadow for depth */
             /* Rounded corners are handled by gameContainer overflow: hidden */
         }
-        #scoreBoard, #livesCount {
+        #scoreBoard, #livesCount, #waveBoard {
             font-size: 1.25rem; /* Slightly larger */
             font-weight: 700; /* Bolder */
             color: #cbd5e0; /* Lighter gray */
@@ -90,6 +96,48 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
+
+        /* Loading indicator for LLM tip */
+        #loadingSpinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4299e1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Life Lost Notification */
+        #lifeLostNotification {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(220, 38, 38, 0.9); /* Red-600 with opacity */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            z-index: 20;
+            display: none; /* Hidden by default */
+            animation: fadeOut 2s forwards; /* Animation for fading out */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+
 
         .touch-controls {
             display: none;
@@ -238,22 +286,58 @@
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
+
+        /* Credits and GitHub Icon styles */
+        #credits {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 0.9rem;
+            color: #a0aec0; /* Tailwind gray-400 */
+            z-index: 10; /* Ensure it's above canvas */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #githubLink {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 1.5rem; /* Larger icon */
+            color: #a0aec0; /* Tailwind gray-400 */
+            z-index: 10; /* Ensure it's above canvas */
+            transition: color 0.2s ease-in-out;
+        }
+
+        #githubLink:hover {
+            color: #e2e8f0; /* Lighter on hover */
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <div id="uiContainer">
             <div id="scoreBoard">Score: 0</div>
+            <div id="waveBoard">Wave: 1</div>
             <button id="shopButton" class="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 transition-colors">Shop</button>
             <div id="livesCount">Lives: 3</div>
         </div>
         <canvas id="gameCanvas"></canvas>
+
+        <div id="credits">
+            <div>Version: 1.0.0</div>
+            <div>Made by SuperYosh23 and Google Gemini</div>
+        </div>
+        <a id="githubLink" href="https://github.com/SuperYosh23" target="_blank" aria-label="My GitHub Profile">
+            <i class="fab fa-github"></i>
+        </a>
     </div>
 
     <div id="messageDisplay">
         <p id="messageText"></p>
         <button id="startButton" class="hidden">Start Game</button>
         <button id="restartButton" class="hidden">Restart Game</button>
+        <button id="getTipButton" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors">Get a Game Tip ✨</button>
+        <div id="loadingSpinner"></div>
     </div>
 
     <div id="shopDisplay" class="hidden">
@@ -263,6 +347,8 @@
         <p class="mt-4 text-lg">Your Score: <span id="shopScore" class="font-bold text-yellow-300">0</span></p>
         <button id="closeShopBtn">Close Shop</button>
     </div>
+
+    <div id="lifeLostNotification" class="hidden">LIFE LOST!</div>
 
     <div class="touch-controls">
         <button id="touchLeftBtn">◀</button>
@@ -275,179 +361,262 @@
         const ctx = canvas.getContext('2d');
         const scoreBoard = document.getElementById('scoreBoard');
         const livesCount = document.getElementById('livesCount');
+        const waveBoard = document.getElementById('waveBoard');
         const messageDisplay = document.getElementById('messageDisplay');
         const messageText = document.getElementById('messageText');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
+        const getTipButton = document.getElementById('getTipButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const lifeLostNotification = document.getElementById('lifeLostNotification');
 
-        // Shop elements
         const shopDisplay = document.getElementById('shopDisplay');
         const shopItemsContainer = document.getElementById('shopItemsContainer');
         const shopScoreDisplay = document.getElementById('shopScore');
         const closeShopBtn = document.getElementById('closeShopBtn');
-        const shopButton = document.getElementById('shopButton'); // Reference to the new shop button
+        const shopButton = document.getElementById('shopButton');
 
-        // Touch controls
         const touchLeftBtn = document.getElementById('touchLeftBtn');
         const touchRightBtn = document.getElementById('touchRightBtn');
         const touchShootBtn = document.getElementById('touchShootBtn');
 
         let gameWidth, gameHeight;
 
-        // Game state variables
         let score = 0;
         let lives = 3;
-        let gameRunning = false; // Game starts as false, waiting for user to press start
-        let shopOpen = false; // New state for shop visibility
+        let wave = 1;
+        let enemiesRequiredForWave = 15;
+        let enemiesDefeatedInWave = 0;
+        const wavesPerBoss = 20;
+        let gameRunning = false;
+        let shopOpen = false;
+        let bossActive = false;
         let animationFrameId;
 
-        // Player properties
+        // Global mouse position and activity tracker
+        const mouse = {
+            x: 0,
+            y: 0,
+            active: false // True if mouse has moved on canvas, false otherwise (e.g., touch device)
+        };
+
         const player = {
-            x: 0, // Will be set in resizeCanvas
-            y: 0, // Will be set in resizeCanvas
+            x: 0,
+            y: 0,
             width: 50,
-            height: 50, // Increased height for more detail
-            color: '#4299e1', // Base color
+            height: 50,
+            color: '#4299e1',
+            currentAngle: -Math.PI / 2, // Initial angle: straight up (-90 degrees or -PI/2 radians)
+            targetAngle: -Math.PI / 2, // Target angle for aiming
+            rotationSpeed: 0.1, // How fast the player rotates towards the target (0.0 to 1.0)
             draw: function() {
-                // Main body gradient
-                const bodyGradient = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y + this.height);
+                ctx.save(); // Save the current canvas state
+
+                // Translate to the center of the player for rotation
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                // Rotate the context by the player's current angle (adjusted for default upward orientation)
+                ctx.rotate(this.currentAngle + Math.PI / 2);
+
+                // Draw player shape relative to its new center (0,0 after translate)
+                const bodyGradient = ctx.createLinearGradient(-this.width / 2, -this.height / 2, this.width / 2, this.height / 2);
                 bodyGradient.addColorStop(0, '#4299e1'); // Blue-500
                 bodyGradient.addColorStop(0.5, '#63b3ed'); // Blue-300
                 bodyGradient.addColorStop(1, '#4299e1');
                 ctx.fillStyle = bodyGradient;
 
                 ctx.beginPath();
-                // Main body
-                ctx.moveTo(this.x + this.width / 2, this.y); // Top point
-                ctx.lineTo(this.x + this.width * 0.1, this.y + this.height * 0.7); // Left side, mid-bottom
-                ctx.lineTo(this.x + this.width * 0.2, this.y + this.height); // Bottom-left tip
-                ctx.lineTo(this.x + this.width * 0.8, this.y + this.height); // Bottom-right tip
-                ctx.lineTo(this.x + this.width * 0.9, this.y + this.height * 0.7); // Right side, mid-bottom
+                ctx.moveTo(0, -this.height / 2); // Top point (relative to new origin)
+                ctx.lineTo(-this.width * 0.4, this.height * 0.2); // Left side, mid-bottom
+                ctx.lineTo(-this.width * 0.3, this.height / 2); // Bottom-left tip
+                ctx.lineTo(this.width * 0.3, this.height / 2); // Bottom-right tip
+                ctx.lineTo(this.width * 0.4, this.height * 0.2); // Right side, mid-bottom
                 ctx.closePath();
                 ctx.fill();
 
                 // Cockpit
                 ctx.fillStyle = '#a78bfa'; // Purple-300
                 ctx.beginPath();
-                ctx.arc(this.x + this.width / 2, this.y + this.height * 0.4, 8, 0, Math.PI * 2);
+                ctx.arc(0, -this.height * 0.1, 8, 0, Math.PI * 2); // Cockpit (relative to new origin)
                 ctx.fill();
 
                 // Thrusters (simple rectangles for now)
                 ctx.fillStyle = '#f56565'; // Red-500 for thruster glow
-                ctx.fillRect(this.x + this.width * 0.3, this.y + this.height - 5, this.width * 0.15, 10);
-                ctx.fillRect(this.x + this.width * 0.55, this.y + this.height - 5, this.width * 0.15, 10);
+                ctx.fillRect(-this.width * 0.2, this.height / 2 - 5, this.width * 0.15, 10); // Thruster left
+                ctx.fillRect(this.width * 0.05, this.height / 2 - 5, this.width * 0.15, 10); // Thruster right
 
                 // Exhaust glow (more dynamic)
-                if (gameRunning) { // Only show exhaust when game is active
-                    const exhaustHeight = Math.random() * 10 + 5; // Vary height
-                    const exhaustGradient = ctx.createLinearGradient(this.x, this.y + this.height, this.x, this.y + this.height + exhaustHeight);
+                if (gameRunning) {
+                    const exhaustHeight = Math.random() * 10 + 5;
+                    const exhaustGradient = ctx.createLinearGradient(0, this.height / 2, 0, this.height / 2 + exhaustHeight);
                     exhaustGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)'); // Orange
                     exhaustGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)'); // Yellow
                     exhaustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Transparent
                     ctx.fillStyle = exhaustGradient;
                     ctx.beginPath();
-                    ctx.moveTo(this.x + this.width * 0.3, this.y + this.height);
-                    ctx.lineTo(this.x + this.width * 0.2, this.y + this.height + exhaustHeight);
-                    ctx.lineTo(this.x + this.width * 0.8, this.y + this.height + exhaustHeight);
-                    ctx.lineTo(this.x + this.width * 0.7, this.y + this.height);
+                    ctx.moveTo(-this.width * 0.2, this.height / 2);
+                    ctx.lineTo(-this.width * 0.3, this.height / 2 + exhaustHeight);
+                    ctx.lineTo(this.width * 0.3, this.height / 2 + exhaustHeight);
+                    ctx.lineTo(this.width * 0.2, this.height / 2);
                     ctx.closePath();
                     ctx.fill();
                 }
+
+                ctx.restore(); // Restore the canvas state to before translation and rotation
             },
             speed: 7,
-            dx: 0 // For touch controls and keyboard
+            dx: 0
         };
 
-        // Bullet properties
         const bullets = [];
         const bulletProps = {
             width: 5,
             height: 15,
-            color: '#f56565', // Base color
+            color: '#f56565',
             draw: function(bullet) {
-                // Draw a slightly rounded bullet with a brighter core and a trail
-                ctx.fillStyle = this.color;
-                ctx.fillRect(bullet.x, bullet.y, this.width, this.height);
-                ctx.fillStyle = '#ff7777'; // Brighter core
-                ctx.fillRect(bullet.x + 1, bullet.y + 2, this.width - 2, this.height - 4);
+                ctx.save(); // Save the current canvas state for bullet rotation
+                // Translate to the center of the bullet
+                ctx.translate(bullet.x + this.width / 2, bullet.y + this.height / 2);
+                // Rotate the context by the bullet's angle (adjusted for default vertical drawing)
+                ctx.rotate(bullet.angle + Math.PI / 2);
 
-                // Simple trail effect
-                ctx.fillStyle = 'rgba(255, 200, 0, 0.5)'; // Orange-yellow transparent
-                ctx.fillRect(bullet.x, bullet.y + this.height, this.width, this.height * 0.5);
+                // Draw bullet shape relative to its new center (0,0 after translate)
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                ctx.fillStyle = '#ff7777';
+                ctx.fillRect(-this.width / 2 + 1, -this.height / 2 + 2, this.width - 2, this.height - 4);
+
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.5)';
+                ctx.fillRect(-this.width / 2, this.height / 2, this.width, this.height * 0.5);
+
+                ctx.restore(); // Restore the canvas state
             },
             speed: 10,
-            cooldown: 250, // milliseconds
+            cooldown: 250,
             lastShotTime: 0
         };
 
-        // Enemy properties
         const enemies = [];
         const enemyProps = {
             width: 40,
-            height: 30, // Changed height for a different look
-            colors: ['#48bb78', '#38a169', '#68d391'], // Array of green shades
+            height: 30,
+            colors: ['#48bb78', '#38a169', '#68d391'],
             draw: function(enemy) {
-                const color = enemy.color || this.colors [0]; // Use specific color or default
+                const color = enemy.color || this.colors [0];
                 ctx.fillStyle = color;
 
-                // Main body (hexagonal)
                 ctx.beginPath();
-                ctx.moveTo(enemy.x + this.width / 2, enemy.y); // Top
-                ctx.lineTo(enemy.x, enemy.y + this.height * 0.3); // Top-left
-                ctx.lineTo(enemy.x, enemy.y + this.height * 0.7); // Bottom-left
-                ctx.lineTo(enemy.x + this.width / 2, enemy.y + this.height); // Bottom
-                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.7); // Bottom-right
-                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.3); // Top-right
+                ctx.moveTo(enemy.x + this.width / 2, enemy.y);
+                ctx.lineTo(enemy.x, enemy.y + this.height * 0.3);
+                ctx.lineTo(enemy.x, enemy.y + this.height * 0.7);
+                ctx.lineTo(enemy.x + this.width / 2, enemy.y + this.height);
+                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.7);
+                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.3);
                 ctx.closePath();
                 ctx.fill();
 
-                // Inner segments/details
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; // Dark outline
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                // Central 'eye' with glow
                 const eyeCenterX = enemy.x + this.width / 2;
                 const eyeCenterY = enemy.y + this.height / 2;
                 const eyeRadius = 8;
 
-                // Glow effect
                 const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
-                glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)'); // Bright yellow center
-                glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)'); // Transparent yellow outer
+                glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
+                glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
                 ctx.fillStyle = glowGradient;
                 ctx.beginPath();
                 ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Main eye
-                ctx.fillStyle = '#f7fafc'; // Tailwind gray-100
+                ctx.fillStyle = '#f7fafc';
                 ctx.beginPath();
                 ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#2d3748'; // Dark pupil
+                ctx.fillStyle = '#2d3748';
                 ctx.beginPath();
                 ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
                 ctx.fill();
             },
             speed: 2,
-            spawnInterval: 1500, // milliseconds
+            spawnInterval: 1500,
             lastSpawnTime: 0
         };
 
-        // Background Stars
+        const boss = {
+            x: 0, y: 0, width: 0, height: 0,
+            health: 0, maxHealth: 0,
+            speed: 1, dx: 1,
+            color: '#e53e3e',
+
+            draw: function() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width * 0.1, this.y);
+                ctx.lineTo(this.x + this.width * 0.9, this.y);
+                ctx.lineTo(this.x + this.width, this.y + this.height * 0.5);
+                ctx.lineTo(this.x + this.width * 0.9, this.y + this.height);
+                ctx.lineTo(this.x + this.width * 0.1, this.y + this.height);
+                ctx.lineTo(this.x, this.y + this.height * 0.5);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#a0aec0';
+                ctx.fillRect(this.x + this.width * 0.05, this.y + this.height * 0.3, 20, this.height * 0.4);
+                ctx.fillRect(this.x + this.width * 0.95 - 20, this.y + this.height * 0.3, 20, this.height * 0.4);
+
+                ctx.fillStyle = '#f6e05e';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                const healthBarWidth = this.width * 0.8;
+                const healthBarHeight = 15;
+                const healthBarX = this.x + (this.width - healthBarWidth) / 2;
+                const healthBarY = this.y - 25;
+
+                ctx.fillStyle = '#c53030';
+                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+                const currentHealthWidth = (this.health / this.maxHealth) * healthBarWidth;
+                ctx.fillStyle = '#48bb78';
+                ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            }
+        };
+
         const stars = [];
         const numStars = 150;
 
-        // New flash effect properties
         const flashEffect = {
             active: false,
-            color: 'rgba(255, 0, 0, 0.3)', // Semi-transparent red
-            duration: 200, // milliseconds
+            color: 'rgba(255, 0, 0, 0.3)',
+            duration: 200,
             startTime: 0
         };
 
-        // Shop items definition
+        // New aim indicator properties
+        const aimIndicator = {
+            x: 0,
+            y: 0,
+            radius: 5,
+            color: '#00ff00', // Green
+            draw: function() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+
+        // Constants for aim restriction
+        const MAX_AIM_DISTANCE = 250; // Max distance from player center
+        const MAX_AIM_ANGLE_RADIANS = Math.PI / 6; // 30 degrees (Math.PI / 6)
+
         const shopItems = {
             'bulletSpeed': {
                 id: 'bulletSpeed',
@@ -468,11 +637,11 @@
                 id: 'extraLife',
                 name: 'Extra Life',
                 baseCost: 200,
-                currentLevel: 0, // Track how many lives bought
+                currentLevel: 0,
                 effect: () => { lives++; updateLivesDisplay(); },
                 description: 'Gain 1 extra life.',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.25)); },
-                getDisplayName: function() { return this.name; } // No level display for lives
+                getDisplayName: function() { return this.name; }
             },
             'playerSpeed': {
                 id: 'playerSpeed',
@@ -491,26 +660,19 @@
             }
         };
 
-        /**
-         * Initializes the background stars with random positions, sizes, and speeds.
-         * Clears existing stars before creating new ones, useful on canvas resize.
-         */
         function initializeStars() {
-            stars.length = 0; // Clear existing stars
+            stars.length = 0;
             for (let i = 0; i < numStars; i++) {
                 stars.push({
                     x: Math.random() * gameWidth,
                     y: Math.random() * gameHeight,
                     radius: Math.random() * 2,
-                    alpha: Math.random() * 0.7 + 0.3, // Ensure stars are somewhat visible
-                    speed: Math.random() * 0.5 + 0.5 // Random speed for parallax effect
+                    alpha: Math.random() * 0.7 + 0.3,
+                    speed: Math.random() * 0.5 + 0.5
                 });
             }
         }
 
-        /**
-         * Draws the background stars on the canvas.
-         */
         function drawStars() {
             ctx.fillStyle = '#ffffff';
             stars.forEach(star => {
@@ -519,169 +681,200 @@
                 ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
-            ctx.globalAlpha = 1; // Reset alpha for other elements
+            ctx.globalAlpha = 1;
         }
 
-        /**
-         * Updates the position of each star, making them scroll down.
-         * If a star goes off-screen, it's repositioned at the top.
-         */
         function updateStars() {
             stars.forEach(star => {
                 star.y += star.speed;
-                // If star goes off bottom, reset to top
                 if (star.y > gameHeight) {
                     star.y = 0;
-                    star.x = Math.random() * gameWidth; // Give it a new random x position
+                    star.x = Math.random() * gameWidth;
                 }
             });
         }
 
-        // --- Utility Functions ---
-        /**
-         * Resizes the canvas to fit the window while maintaining aspect ratio
-         * and updates player position.
-         */
         function resizeCanvas() {
             const uiHeight = document.getElementById('uiContainer').offsetHeight;
+            const gameContainer = document.getElementById('gameContainer');
 
-            const maxWidth = 800;
-            const maxHeight = 600;
+            // Calculate available space in the window for the game area
+            const availableWidth = window.innerWidth * 0.95; // 95% of window width
+            const availableHeight = window.innerHeight * 0.95 - uiHeight; // 95% of window height minus UI
 
-            let newWidth = Math.min(maxWidth, window.innerWidth * 0.9);
-            let newHeight = Math.min(maxHeight, newWidth * (3/4)); // Maintain 4:3 aspect ratio
+            // Desired aspect ratio 16:9
+            const aspectRatio = 16 / 9;
 
-            // Adjust if height is too large for the window
-            if (newHeight > (window.innerHeight - uiHeight - 50) ) {
-                newHeight = window.innerHeight - uiHeight - 50;
-                newWidth = newHeight * (4/3); // Recalculate width based on new height
+            let newWidth = availableWidth;
+            let newHeight = availableWidth / aspectRatio;
+
+            // If calculated height exceeds available height, adjust based on height
+            if (newHeight > availableHeight) {
+                newHeight = availableHeight;
+                newWidth = availableHeight * aspectRatio;
             }
 
-            // Ensure width doesn't exceed 90% of window width after height adjustment
-            newWidth = Math.min(newWidth, window.innerWidth * 0.9);
-
+            // Apply calculated dimensions to canvas
             canvas.width = newWidth;
             canvas.height = newHeight;
             gameWidth = canvas.width;
             gameHeight = canvas.height;
 
-            // Reposition player to center bottom
+            // Adjust gameContainer size to match canvas size
+            gameContainer.style.width = `${newWidth}px`;
+            gameContainer.style.height = `${newHeight + uiHeight}px`; // Add UI height back
+
             player.x = gameWidth / 2 - player.width / 2;
             player.y = gameHeight - player.height - 20;
 
-            // Adjust message display font size based on canvas width for responsiveness
             messageDisplay.style.fontSize = `${Math.max(16, canvas.width / 25)}px`;
-            shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`; // Adjust shop font size too
+            shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`;
 
-            initializeStars(); // Re-initialize stars on resize to fill new canvas dimensions
+            initializeStars();
         }
 
-        // --- Drawing Functions ---
-        /**
-         * Draws the player's spaceship on the canvas.
-         */
         function drawPlayer() {
-            player.draw(); // Use the player's custom draw method
+            player.draw();
         }
 
-        /**
-         * Draws a single bullet on the canvas.
-         * @param {object} bullet - The bullet object with x, y properties.
-         */
         function drawBullet(bullet) {
-            bulletProps.draw(bullet); // Use the bullet's custom draw method
+            bulletProps.draw(bullet);
         }
 
-        /**
-         * Draws a single enemy on the canvas with simple eyes.
-         * @param {object} enemy - The enemy object with x, y properties.
-         */
         function drawEnemy(enemy) {
-            enemyProps.draw(enemy); // Use the enemy's custom draw method
+            enemyProps.draw(enemy);
         }
 
-        // --- Update Functions ---
-        /**
-         * Updates the player's position based on its current movement direction (dx).
-         * Clamps player position within canvas boundaries.
-         */
         function updatePlayer() {
             player.x += player.dx;
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > gameWidth) player.x = gameWidth - player.width;
         }
 
-        /**
-         * Updates the position of all active bullets.
-         * Removes bullets that go off-screen.
-         */
         function updateBullets() {
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const bullet = bullets [i];
-                bullet.y -= bulletProps.speed;
-                if (bullet.y + bulletProps.height < 0) {
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+
+                // Calculate current squared distance from bullet's starting point to its current position
+                const currentDistanceSq = (bullet.x + bulletProps.width/2 - bullet.startX)**2 + (bullet.y + bulletProps.height/2 - bullet.startY)**2;
+
+                // Remove bullet if it has reached or passed its target, or if it goes off-screen
+                if (currentDistanceSq >= bullet.totalTargetDistanceSq ||
+                    bullet.y + bulletProps.height < 0 || bullet.y > gameHeight ||
+                    bullet.x + bulletProps.width < 0 || bullet.x > gameWidth) {
                     bullets.splice(i, 1);
                 }
             }
         }
 
-        /**
-         * Spawns a new enemy if enough time has passed since the last spawn.
-         * Gives the new enemy a random color from the enemyProps.colors array.
-         * Gradually decreases spawn interval to increase difficulty.
-         */
         function spawnEnemy() {
             const currentTime = Date.now();
+            if (bossActive) {
+                return;
+            }
+
+            // Check if it's a boss wave and no enemies are left
+            if (wave > 0 && wave % wavesPerBoss === 0 && enemies.length === 0 && !bossActive) {
+                startBossFight();
+                return;
+            }
+
             if (currentTime - enemyProps.lastSpawnTime > enemyProps.spawnInterval) {
                 const x = Math.random() * (gameWidth - enemyProps.width);
-                const y = -enemyProps.height; // Spawn above canvas
-                const randomColor = enemyProps.colors [Math.floor(Math.random() * enemyProps.colors.length)];
-                enemies.push({ x, y, color: randomColor }); // Add random color to the enemy
+                const y = -enemyProps.height;
+                const randomColor = enemyProps.colors[Math.floor(Math.random() * enemyProps.colors.length)];
+                enemies.push({ x, y, color: randomColor });
                 enemyProps.lastSpawnTime = currentTime;
-                // Gradually increase difficulty by reducing spawn interval
-                if (enemyProps.spawnInterval > 500) { // Don't go below 0.5 seconds
-                    enemyProps.spawnInterval *= 0.99;
-                }
+
+                // Increase difficulty based on wave
+                enemyProps.speed = 2 + Math.floor((wave - 1) / 5) * 0.5;
+                enemyProps.spawnInterval = Math.max(300, 1500 - (wave - 1) * 20);
             }
         }
 
-        /**
-         * Updates the position of all active enemies.
-         * Removes enemies that go off-screen and reduces player lives.
-         */
         function updateEnemies() {
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
                 enemy.y += enemyProps.speed;
                 if (enemy.y + enemyProps.height > gameHeight) {
                     enemies.splice(i, 1);
-                    loseLife(); // Player loses a life if enemy passes by
                 }
             }
         }
 
-        // --- Collision Detection ---
-        /**
-         * Checks for collisions between bullets and enemies, and player and enemies.
-         */
+        function updateBoss() {
+            if (!bossActive) return;
+
+            boss.x += boss.dx;
+
+            if (boss.x < 0 || boss.x + boss.width > gameWidth) {
+                boss.dx *= -1;
+            }
+
+            if (boss.y < gameHeight * 0.2) {
+                boss.y += boss.speed * 0.5;
+            }
+        }
+
         function checkCollisions() {
             // Bullet-Enemy collision
             for (let i = bullets.length - 1; i >= 0; i--) {
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     const bullet = bullets [i];
                     const enemy = enemies [j];
-                    // Check if bullet and enemy exist and if their bounding boxes overlap
                     if (bullet && enemy &&
                         bullet.x < enemy.x + enemyProps.width &&
                         bullet.x + bulletProps.width > enemy.x &&
                         bullet.y < enemy.y + enemyProps.height &&
                         bullet.y + bulletProps.height > enemy.y
                     ) {
-                        bullets.splice(i, 1); // Remove bullet
-                        enemies.splice(j, 1); // Remove enemy
-                        score += 10; // Increase score
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        score += 10;
+                        enemiesDefeatedInWave++;
                         updateScoreDisplay();
-                        break; // Break inner loop as bullet is gone
+
+                        // Check for wave progression
+                        if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
+                            wave++;
+                            enemiesDefeatedInWave = 0;
+                            enemiesRequiredForWave = 15 + Math.floor((wave - 1) / 5) * 5;
+                            updateScoreDisplay();
+                            messageText.textContent = `Wave ${wave} Incoming!`;
+                            messageDisplay.style.display = 'block';
+                            setTimeout(() => {
+                                messageDisplay.style.display = 'none';
+                            }, 2000);
+
+                            if (wave % wavesPerBoss === 0) {
+                                enemies.length = 0;
+                                startBossFight();
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Bullet-Boss collision
+            if (bossActive) {
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const bullet = bullets[i];
+                    if (
+                        bullet.x < boss.x + boss.width &&
+                        bullet.x + bulletProps.width > boss.x &&
+                        bullet.y < boss.y + boss.height &&
+                        bullet.y + bulletProps.height > boss.y
+                    ) {
+                        bullets.splice(i, 1);
+                        boss.health -= 10;
+                        updateBossHealthDisplay();
+                        if (boss.health <= 0) {
+                            defeatBoss();
+                        }
+                        break;
                     }
                 }
             }
@@ -689,65 +882,97 @@
             // Player-Enemy collision
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
-                // Check if player and enemy bounding boxes overlap
                 if (
                     player.x < enemy.x + enemyProps.width &&
                     player.x + player.width > enemy.x &&
                     player.y < enemy.y + enemyProps.height &&
                     player.y + player.height > enemy.y
                 ) {
-                    enemies.splice(i, 1); // Remove enemy
-                    loseLife(); // Player loses a life
-                    break; // Break loop as player can only collide with one enemy at a time for simplicity
+                    enemies.splice(i, 1);
+                    loseLife('player-enemy collision');
+                    break;
+                }
+            }
+
+            // Player-Boss collision
+            if (bossActive) {
+                if (
+                    player.x < boss.x + boss.width &&
+                    player.x + player.width > boss.x &&
+                    player.y < boss.y + boss.height &&
+                    player.y + player.height > boss.y
+                ) {
+                    loseLife('player-boss collision');
+                    return;
                 }
             }
         }
 
-        // --- Game Logic ---
-        /**
-         * Creates a new bullet if the cooldown period has passed.
-         */
         function shoot() {
             const currentTime = Date.now();
             if (currentTime - bulletProps.lastShotTime > bulletProps.cooldown) {
+                // Bullet starts from player's center
+                const startX = player.x + player.width / 2;
+                const startY = player.y + player.height / 2;
+
+                // Calculate direction from player center to aim indicator
+                const targetX = aimIndicator.x;
+                const targetY = aimIndicator.y;
+
+                const deltaX = targetX - startX;
+                const deltaY = targetY - startY;
+                const angle = Math.atan2(deltaY, deltaX); // Angle for bullet movement and drawing
+
+                const bulletDx = bulletProps.speed * Math.cos(angle);
+                const bulletDy = bulletProps.speed * Math.sin(angle);
+
+                // Calculate total distance to target for bullet destruction
+                const totalTargetDistanceSq = (targetX - startX)**2 + (targetY - startY)**2;
+
                 bullets.push({
-                    x: player.x + player.width / 2 - bulletProps.width / 2,
-                    y: player.y
+                    x: startX - bulletProps.width / 2, // Adjust for bullet width to be centered
+                    y: startY - bulletProps.height / 2, // Adjust for bullet height to be centered
+                    dx: bulletDx,
+                    dy: bulletDy,
+                    startX: startX, // Store initial position for distance calculation
+                    startY: startY,
+                    targetX: targetX, // Store target position
+                    targetY: targetY,
+                    totalTargetDistanceSq: totalTargetDistanceSq, // Store total squared distance
+                    angle: angle // Store angle for drawing
                 });
                 bulletProps.lastShotTime = currentTime;
             }
         }
 
-        /**
-         * Updates the score display on the UI.
-         */
         function updateScoreDisplay() {
             scoreBoard.textContent = `Score: ${score}`;
+            waveBoard.textContent = `Wave: ${wave}`;
         }
 
-        /**
-         * Updates the lives display on the UI.
-         */
         function updateLivesDisplay() {
             livesCount.textContent = `Lives: ${lives}`;
         }
 
-        /**
-         * Decreases player's life count and checks for game over.
-         * Also triggers screen flash, player reset, and score halving.
-         */
-        function loseLife() {
+        function updateBossHealthDisplay() {
+            // Health bar is drawn directly in boss.draw()
+        }
+
+        function loseLife(reason = 'unknown cause') {
+            console.log(`Life lost due to: ${reason}`);
             lives--;
             updateLivesDisplay();
 
-            // Halve the score and update display
+            lifeLostNotification.classList.remove('hidden');
+            lifeLostNotification.style.animation = 'none';
+            void lifeLostNotification.offsetWidth;
+            lifeLostNotification.style.animation = 'fadeOut 2s forwards';
+
             score = Math.floor(score / 2);
             updateScoreDisplay();
 
-            // Reset player position to center
             player.x = gameWidth / 2 - player.width / 2;
 
-            // Activate red flash effect
             flashEffect.active = true;
             flashEffect.startTime = Date.now();
 
@@ -756,89 +981,119 @@
             }
         }
 
-        /**
-         * Ends the game, displays game over message, and shows restart button.
-         */
         function gameOver() {
             gameRunning = false;
-            cancelAnimationFrame(animationFrameId); // Stop the game loop
+            bossActive = false;
+            cancelAnimationFrame(animationFrameId);
             messageText.textContent = `Game Over! Final Score: ${score}`;
-            messageDisplay.style.display = 'block'; // Show message box
-            restartButton.classList.remove('hidden'); // Show restart button
-            startButton.classList.add('hidden'); // Ensure start button is hidden
+            messageDisplay.style.display = 'block';
+            restartButton.classList.remove('hidden');
+            startButton.classList.add('hidden');
+            getTipButton.classList.remove('hidden');
         }
 
-        /**
-         * Resets game state and starts a new game.
-         */
+        function startBossFight() {
+            bossActive = true;
+            enemies.length = 0;
+            boss.maxHealth = 100 + (Math.floor(wave / wavesPerBoss) - 1) * 50;
+            boss.health = boss.maxHealth;
+            boss.width = gameWidth * 0.6;
+            boss.height = 80;
+            boss.x = gameWidth / 2 - boss.width / 2;
+            boss.y = -boss.height;
+            boss.speed = 1 + (Math.floor(wave / wavesPerBoss) - 1) * 0.2;
+            boss.dx = boss.speed;
+            updateBossHealthDisplay();
+            messageText.textContent = "BOSS BATTLE INCOMING!";
+            messageDisplay.style.display = 'block';
+            startButton.classList.add('hidden');
+            restartButton.classList.add('hidden');
+            getTipButton.classList.add('hidden');
+
+            setTimeout(() => {
+                messageDisplay.style.display = 'none';
+            }, 3000);
+        }
+
+        function defeatBoss() {
+            bossActive = false;
+            score += 500;
+            updateScoreDisplay();
+            messageText.textContent = `Boss Defeated! Wave ${wave + 1} Incoming!`;
+            messageDisplay.style.display = 'block';
+            setTimeout(() => {
+                messageDisplay.style.display = 'none';
+            }, 3000);
+            wave++;
+            enemiesDefeatedInWave = 0;
+            enemiesRequiredForWave = 15 + Math.floor((wave - 1) / 5) * 5;
+            enemyProps.spawnInterval = 1500;
+            enemyProps.speed = 2;
+            enemies.length = 0;
+        }
+
         function startGame() {
             score = 0;
             lives = 3;
+            wave = 1;
+            enemiesRequiredForWave = 15;
+            enemiesDefeatedInWave = 0;
             gameRunning = true;
-            bullets.length = 0; // Clear all bullets
-            enemies.length = 0; // Clear all enemies
-            enemyProps.spawnInterval = 1500; // Reset spawn interval
-            enemyProps.lastSpawnTime = Date.now(); // Reset last spawn time
-            bulletProps.lastShotTime = 0; // Reset bullet cooldown
-            player.dx = 0; // Reset player movement
+            bossActive = false;
+            bullets.length = 0;
+            enemies.length = 0;
+            enemyProps.spawnInterval = 1500;
+            enemyProps.speed = 2;
+            enemyProps.lastSpawnTime = Date.now();
+            bulletProps.lastShotTime = 0;
+            player.dx = 0;
+            player.currentAngle = -Math.PI / 2; // Reset player angle to straight up
+            player.targetAngle = -Math.PI / 2;
 
-            // Reset shop item levels for a new game
             for (const key in shopItems) {
                 shopItems [key].currentLevel = 0;
             }
-            // Reset player and bullet base stats for new game
             player.speed = 7;
             bulletProps.speed = 10;
 
-
             updateScoreDisplay();
             updateLivesDisplay();
-            resizeCanvas(); // Ensure canvas is sized correctly on start
+            resizeCanvas();
 
-            messageDisplay.style.display = 'none'; // Hide message box
-            startButton.classList.add('hidden'); // Hide start button
-            restartButton.classList.add('hidden'); // Hide restart button
+            messageDisplay.style.display = 'none';
+            startButton.classList.add('hidden');
+            restartButton.classList.add('hidden');
+            getTipButton.classList.add('hidden');
 
-            // If a previous animation frame exists, cancel it before starting a new one
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
-            animationFrameId = requestAnimationFrame(gameLoopWithInput); // Start the main game loop
+            animationFrameId = requestAnimationFrame(gameLoopWithInput);
         }
 
-        // --- Shop Functions ---
-        /**
-         * Opens the shop, pauses the game, and renders shop items.
-         */
         function openShop() {
-            if (gameRunning) { // Only pause if game is running
+            if (gameRunning) {
                 gameRunning = false;
-                cancelAnimationFrame(animationFrameId); // Stop the game loop
+                cancelAnimationFrame(animationFrameId);
             }
             shopOpen = true;
-            messageDisplay.style.display = 'none'; // Hide any other messages
-            shopDisplay.style.display = 'block'; // Show the shop
-            renderShopItems(); // Populate shop items
+            messageDisplay.style.display = 'none';
+            shopDisplay.style.display = 'block';
+            renderShopItems();
         }
 
-        /**
-         * Closes the shop and resumes the game if it was running.
-         */
         function closeShop() {
             shopOpen = false;
-            shopDisplay.style.display = 'none'; // Hide the shop
-            if (!gameRunning) { // If game was paused for shop, resume it
-                gameRunning = true; // Set gameRunning to true before resuming loop
+            shopDisplay.style.display = 'none';
+            if (!gameRunning) {
+                gameRunning = true;
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
             }
         }
 
-        /**
-         * Renders shop items dynamically based on their current state (cost, level).
-         */
         function renderShopItems() {
-            shopItemsContainer.innerHTML = ''; // Clear previous items
-            shopScoreDisplay.textContent = score; // Update current score in shop
+            shopItemsContainer.innerHTML = '';
+            shopScoreDisplay.textContent = score;
 
             for (const key in shopItems) {
                 const item = shopItems [key];
@@ -854,7 +1109,7 @@
 
                 const costSpan = document.createElement('span');
                 costSpan.textContent = `${itemCost} pts`;
-                costSpan.classList.add('font-bold', 'text-yellow-300'); // Highlight cost
+                costSpan.classList.add('font-bold', 'text-yellow-300');
                 itemDiv.appendChild(costSpan);
 
                 const buyButton = document.createElement('button');
@@ -862,7 +1117,6 @@
                 buyButton.className = 'ml-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors';
                 buyButton.onclick = () => buyItem(item.id);
 
-                // Disable button if not enough score or max level reached
                 if (score < itemCost || (item.maxLevel && item.currentLevel >= item.maxLevel)) {
                     buyButton.disabled = true;
                     buyButton.classList.remove('hover:bg-green-600');
@@ -874,10 +1128,6 @@
             }
         }
 
-        /**
-         * Handles the purchase of an item from the shop.
-         * @param {string} itemId - The ID of the item to purchase.
-         */
         function buyItem(itemId) {
             const item = shopItems [itemId];
             const itemCost = item.getCost();
@@ -885,29 +1135,62 @@
             if (score >= itemCost) {
                 score -= itemCost;
                 updateScoreDisplay();
-                item.effect(); // Apply the item's effect
+                item.effect();
 
-                if (item.currentLevel !== undefined) { // If it's a level-based upgrade
+                if (item.currentLevel !== undefined) {
                     item.currentLevel++;
                 }
-                renderShopItems(); // Re-render shop to update prices/disabled states
+                renderShopItems();
             } else {
-                // This case should ideally be prevented by disabling the button
-                // but good for robustness or future temporary messages.
                 console.log("Not enough points!");
             }
         }
 
-        // --- Event Listeners ---
-        // Object to track keyboard key states (true if pressed, false if released)
+        async function getGameTip() {
+            messageText.textContent = "Generating tip...";
+            loadingSpinner.style.display = 'block';
+            getTipButton.disabled = true;
+
+            const prompt = "Provide a concise and encouraging tip for a 2D space shooter game. Focus on dodging enemies, strategic shooting, and utilizing shop upgrades (like faster bullets or player speed). Keep it under 50 words.";
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const tip = result.candidates[0].content.parts[0].text;
+                    messageText.textContent = tip;
+                } else {
+                    messageText.textContent = "Failed to get tip. Try again!";
+                    console.error("Gemini API response structure unexpected:", result);
+                }
+            } catch (error) {
+                messageText.textContent = "Error getting tip. Check console.";
+                console.error("Error calling Gemini API:", error);
+            } finally {
+                loadingSpinner.style.display = 'none';
+                getTipButton.disabled = false;
+            }
+        }
+
         const keyState = {};
 
         window.addEventListener('keydown', (e) => {
             keyState [e.key.toLowerCase()] = true;
-            // Prevent default behavior for spacebar to avoid scrolling
             if (e.key === ' ' || e.key === 'spacebar') {
                 e.preventDefault();
-                if (gameRunning) shoot(); // Shoot only if game is running
+                if (gameRunning) shoot();
             }
         });
 
@@ -915,58 +1198,156 @@
             keyState [e.key.toLowerCase()] = false;
         });
 
-        // Global flags for touch state, controlled by touch event listeners
+        // Add click listener for shooting on the entire window
+        window.addEventListener('click', (e) => {
+            if (gameRunning) {
+                shoot();
+            }
+        });
+
         let touchLeftActive = false;
         let touchRightActive = false;
 
-        /**
-         * Handles player movement based on current keyboard and touch input states.
-         * This function is called every frame in the game loop.
-         */
-        function handleMovementInput() {
-            player.dx = 0; // Reset player movement for the current frame
+        // Event listener for mouse movement on the entire window
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            // Adjust mouse coordinates to be relative to the canvas
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true; // Indicate that mouse input is being used
+        });
 
-            // Apply movement based on active inputs
+        // Event listener for touch movement on the canvas
+        canvas.addEventListener('touchmove', (e) => {
+            // If touch is detected, assume mouse is not active for aiming purposes
+            mouse.active = false;
+        });
+
+
+        function handleMovementInput() {
+            player.dx = 0;
+
             if (keyState['arrowleft'] || keyState['a'] || touchLeftActive) {
                 player.dx = -player.speed;
             }
             if (keyState['arrowright'] || keyState['d'] || touchRightActive) {
-                // If both left and right are active, right movement takes precedence.
-                // This creates a simple "override" behavior.
                 player.dx = player.speed;
             }
         }
 
-        // Main Game Loop that includes input handling and drawing
+        // Function to update player's rotation
+        function updatePlayerRotation() {
+            if (mouse.active) {
+                // Calculate target angle based on mouse position relative to player center
+                const playerCenterX = player.x + player.width / 2;
+                const playerCenterY = player.y + player.height / 2;
+                player.targetAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
+            } else {
+                // Default to straight up if mouse is not active (e.g., on touch devices or no mouse movement)
+                player.targetAngle = -Math.PI / 2;
+            }
+
+            // Smoothly interpolate current angle towards target angle
+            let angleDiff = player.targetAngle - player.currentAngle;
+
+            // Handle angle wrapping (e.g., from 170 to -170 degrees)
+            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            player.currentAngle += angleDiff * player.rotationSpeed;
+        }
+
+        // Function to update aim indicator position
+        function updateAimIndicator() {
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+
+            let targetAimX = mouse.x;
+            let targetAimY = mouse.y;
+
+            if (!mouse.active) {
+                // If mouse is not active (e.g., touch device), default aim straight up
+                targetAimX = playerCenterX;
+                targetAimY = playerCenterY - MAX_AIM_DISTANCE; // Aim straight up at max distance
+            }
+
+            // 1. Calculate the vector from player to target aim
+            let deltaX = targetAimX - playerCenterX;
+            let deltaY = targetAimY - playerCenterY;
+
+            // 2. Calculate the distance
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // 3. Clamp the distance
+            if (distance > MAX_AIM_DISTANCE) {
+                deltaX = (deltaX / distance) * MAX_AIM_DISTANCE;
+                deltaY = (deltaY / distance) * MAX_AIM_DISTANCE;
+                distance = MAX_AIM_DISTANCE; // Update distance after clamping
+            }
+
+            // 4. Calculate the angle of the desired aim
+            let desiredAimAngle = Math.atan2(deltaY, deltaX);
+
+            // 5. Clamp the angle relative to player's current facing angle
+            // Normalize player.currentAngle to be between -PI and PI
+            let normalizedPlayerAngle = player.currentAngle;
+            if (normalizedPlayerAngle > Math.PI) normalizedPlayerAngle -= 2 * Math.PI;
+            if (normalizedPlayerAngle < -Math.PI) normalizedPlayerAngle += 2 * Math.PI;
+
+            // Calculate angle difference
+            let angleDiff = desiredAimAngle - normalizedPlayerAngle;
+
+            // Handle angle wrapping for difference
+            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            // Clamp the angle difference
+            if (angleDiff > MAX_AIM_ANGLE_RADIANS) {
+                angleDiff = MAX_AIM_ANGLE_RADIANS;
+            } else if (angleDiff < -MAX_AIM_ANGLE_RADIANS) {
+                angleDiff = -MAX_AIM_ANGLE_RADIANS;
+            }
+
+            // Calculate the final clamped angle
+            let clampedAimAngle = normalizedPlayerAngle + angleDiff;
+
+            // 6. Recalculate deltaX and deltaY based on clamped angle and distance
+            aimIndicator.x = playerCenterX + distance * Math.cos(clampedAimAngle);
+            aimIndicator.y = playerCenterY + distance * Math.sin(clampedAimAngle);
+        }
+
+
         function gameLoopWithInput() {
-            if (!gameRunning || shopOpen) return; // Stop loop if game is not running or shop is open
+            if (!gameRunning || shopOpen) return;
 
-            handleMovementInput(); // Update player.dx based on current inputs
+            handleMovementInput();
+            updatePlayerRotation();
+            updateAimIndicator(); // Update aim indicator position
 
-            // Clear canvas for the next frame
-            ctx.fillStyle = '#000'; // Solid black background
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, gameWidth, gameHeight);
 
-            updateStars(); // Update star positions for scrolling
-            drawStars(); // Draw the background stars
+            updateStars();
+            drawStars();
 
-            // Update and draw player
             updatePlayer();
             drawPlayer();
+            aimIndicator.draw(); // Draw the aim indicator
 
-            // Spawn, update, and draw enemies
-            spawnEnemy();
-            updateEnemies();
-            enemies.forEach(drawEnemy);
+            if (bossActive) {
+                updateBoss();
+                boss.draw();
+            } else {
+                spawnEnemy();
+                updateEnemies();
+                enemies.forEach(drawEnemy);
+            }
 
-            // Update and draw bullets
             updateBullets();
             bullets.forEach(drawBullet);
 
-            // Check for and handle all collisions
             checkCollisions();
 
-            // Draw red flash if active
             if (flashEffect.active) {
                 ctx.fillStyle = flashEffect.color;
                 ctx.fillRect(0, 0, gameWidth, gameHeight);
@@ -975,61 +1356,53 @@
                 }
             }
 
-            // Request the next animation frame to continue the loop
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
         }
 
-        // --- Touch Controls Event Listeners ---
-        // Touch Left Button
         touchLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchLeftActive = true; });
         touchLeftBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchLeftActive = false; });
         touchLeftBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchLeftActive = false; });
 
-        // Touch Right Button
         touchRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchRightActive = true; });
         touchRightBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchRightActive = false; });
         touchRightBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchRightActive = false; });
 
-        // Touch Shoot Button
         touchShootBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning) shoot(); // Shoot only if game is running
+            if (gameRunning) {
+                // For touch shooting, the aim indicator will already be straight up if mouse is not active
+                shoot();
+            }
         });
 
-        // Event listener for the start game button
         startButton.addEventListener('click', startGame);
-        // Event listener for the restart game button (re-uses startGame function)
         restartButton.addEventListener('click', startGame);
-        // Event listener for the shop button
         shopButton.addEventListener('click', openShop);
-        // Event listener for the close shop button
         closeShopBtn.addEventListener('click', closeShop);
+        getTipButton.addEventListener('click', getGameTip);
 
-        // Event listener for window resize to make the game responsive
         window.addEventListener('resize', () => {
             resizeCanvas();
-            // If the game is not running (e.g., on game over screen), re-display the message
-            if (!gameRunning && !shopOpen) { // Also check if shop is not open
+            if (!gameRunning && !shopOpen) {
                 messageText.textContent = `Game Over! Final Score: ${score}`;
                 messageDisplay.style.display = 'block';
             }
             if (shopOpen) {
-                renderShopItems(); // Re-render shop items to update layout if needed
+                renderShopItems();
             }
         });
 
-        // --- Initialization on Window Load ---
         window.onload = () => {
-            resizeCanvas(); // Set initial canvas size
-            updateScoreDisplay(); // Initialize score display
-            updateLivesDisplay(); // Initialize lives display
-            initializeStars(); // Initialize background stars
+            resizeCanvas();
+            updateScoreDisplay();
+            updateLivesDisplay();
+            initializeStars();
 
-            // Set up initial start screen message and button visibility
-            messageText.textContent = "That Shooting Game"; // Updated game name
-            messageDisplay.style.display = 'block'; // Show message box
-            startButton.classList.remove('hidden'); // Show start button
-            restartButton.classList.add('hidden'); // Ensure restart button is hidden
+            messageText.textContent = "That Shooting Game";
+            messageDisplay.style.display = 'block';
+            startButton.classList.remove('hidden');
+            restartButton.classList.add('hidden');
+            getTipButton.classList.remove('hidden');
         };
     </script>
 </body>
