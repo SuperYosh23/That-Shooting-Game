@@ -6,81 +6,130 @@
     <title>That Shooting Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
+        /* Body base styles */
         body {
             font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             background-color: #1a202c; /* Tailwind gray-900 */
             color: #e2e8f0; /* Tailwind gray-300 */
             margin: 0;
             overflow: hidden; /* Prevent scrollbars from canvas */
+            display: flex; /* Use flexbox for overall layout */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100vw; /* Ensure body takes full viewport width */
+            position: relative; /* For absolute positioning of gameContainer */
         }
+
         #gameContainer {
+            position: absolute; /* Position absolutely to fill the background */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            border: 2px solid #4a5568; /* Tailwind gray-600 */
-            border-radius: 0.75rem; /* More rounded corners */
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,10,0,0.1); /* Deeper shadow */
-            background-color: #2d3748; /* Tailwind gray-800 */
-            overflow: hidden; /* Ensure rounded corners clip content */
-            position: relative; /* Needed for absolute positioning of credits */
-            width: 95vw; /* Make container span almost full viewport width */
-            height: 95vh; /* Make container span almost full viewport height */
-            max-width: 1200px; /* Optional: set a max width if desired for very large screens */
-            max-height: 800px; /* Optional: set a max height if desired */
+            justify-content: center; /* Center canvas vertically */
+            background-color: #000; /* Canvas will be drawn over this, but good fallback */
+            overflow: hidden; /* Ensure content is clipped */
+            border-radius: 0; /* No border-radius on container, canvas is full screen */
+            box-shadow: none; /* No shadow on container */
         }
+
         canvas {
             display: block;
-            background-color: #000;
-            /* Canvas size will be set by JavaScript to fill gameContainer */
+            background-color: #000; /* Canvas background */
+            width: 100%; /* Canvas fills its container */
+            height: 100%; /* Canvas fills its container */
         }
+
         #uiContainer {
+            position: absolute; /* Position UI over the canvas */
+            top: 0;
+            left: 0;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
             padding: 1rem;
             background: linear-gradient(to bottom, #2d3748, #1a202c); /* Gradient background */
             border-bottom: 1px solid #4a5568; /* Subtle border */
             box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Shadow for depth */
-            /* Rounded corners are handled by gameContainer overflow: hidden */
+            z-index: 5; /* Ensure UI is above canvas */
         }
-        #scoreBoard, #livesCount, #waveBoard {
-            font-size: 1.25rem; /* Slightly larger */
-            font-weight: 700; /* Bolder */
-            color: #cbd5e0; /* Lighter gray */
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Text shadow for depth */
+
+        #scoreBoard, #waveBoard {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #cbd5e0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        #messageDisplay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(30, 41, 59, 0.95); /* Darker, more opaque */
-            color: #e2e8f0;
-            padding: 2.5rem 3rem; /* More padding */
-            border-radius: 0.75rem; /* More rounded */
-            text-align: center;
-            font-size: 1.8rem; /* Larger font */
-            font-weight: 600;
-            z-index: 10;
-            display: none;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); /* Deeper shadow */
-            border: 1px solid #4a5568; /* Subtle border */
-        }
-        #messageDisplay button {
-            margin-top: 1.5rem; /* More margin */
-            padding: 0.75rem 1.75rem; /* Larger padding */
-            font-size: 1.1rem; /* Slightly larger font */
-            background: linear-gradient(to right, #4299e1, #63b3ed); /* Gradient button */
+
+        #pauseButton, #settingsButtonInGame { /* Added settingsButtonInGame */
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background: linear-gradient(to right, #63b3ed, #4299e1);
             color: white;
             border: none;
-            border-radius: 0.5rem; /* More rounded */
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            margin-right: 0.5rem; /* Space between buttons */
+        }
+        #pauseButton:hover, #settingsButtonInGame:hover {
+            background: linear-gradient(to right, #4299e1, #3182ce);
+            transform: translateY(-1px);
+        }
+        #pauseButton:active, #settingsButtonInGame:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Message display (title screen, game over, pause, wave messages) */
+        #messageDisplay {
+            position: fixed; /* Always fixed to viewport */
+            top: 0;
+            left: 0;
+            height: 100vh; /* Full viewport height */
+            width: 300px; /* Fixed width for the panel */
+            background-color: rgba(30, 41, 59, 0.95); /* Semi-transparent dark background */
+            color: #e2e8f0;
+            padding: 2rem;
+            box-sizing: border-box; /* Include padding in width/height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center content vertically */
+            align-items: flex-start; /* Align content to the left */
+            z-index: 10; /* Ensure it's on top of gameContainer and UI */
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5); /* Shadow on the right edge */
+            border-right: 1px solid #4a5568; /* Subtle border on the right */
+            text-align: left; /* Default text alignment for panel content */
+        }
+
+        #messageDisplay #messageText {
+            font-size: 2.8rem; /* Larger title font */
+            font-weight: 800;
+            margin-bottom: 2rem;
+            width: 100%;
+            text-align: left; /* Align title text to left */
+            line-height: 1.1; /* Adjust line height for multi-line titles */
+        }
+
+        #messageDisplay button {
+            width: 100%; /* Make buttons fill the panel width */
+            margin-top: 1rem;
+            padding: 0.75rem 1.75rem;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #4299e1, #63b3ed);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
@@ -88,7 +137,7 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         #messageDisplay button:hover {
-            background: linear-gradient(to right, #3182ce, #4299e1); /* Darker gradient on hover */
+            background: linear-gradient(to right, #3182ce, #4299e1);
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
@@ -97,45 +146,28 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* Loading indicator for LLM tip */
-        #loadingSpinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #4299e1;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin: 1rem auto;
-            display: none; /* Hidden by default */
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Life Lost Notification */
-        #lifeLostNotification {
-            position: absolute;
-            top: 40%;
+        /* Small overlay messages (pause, wave incoming) - these should be centered */
+        #messageDisplay.overlay-message {
+            position: absolute; /* Revert to absolute for centering within gameContainer */
+            width: auto; /* Auto width for content */
+            height: auto; /* Auto height for content */
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(220, 38, 38, 0.9); /* Red-600 with opacity */
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            font-size: 1.5rem;
-            font-weight: bold;
-            z-index: 20;
-            display: none; /* Hidden by default */
-            animation: fadeOut 2s forwards; /* Animation for fading out */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            padding: 2.5rem 3rem;
+            text-align: center; /* Center text for overlay messages */
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid #4a5568;
+            background-color: rgba(30, 41, 59, 0.95);
         }
-
-        @keyframes fadeOut {
-            0% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { opacity: 0; display: none; }
+        #messageDisplay.overlay-message #messageText {
+            font-size: 1.8rem; /* Smaller font for overlay messages */
+            text-align: center;
+            margin-bottom: 0; /* No margin for simple messages */
+        }
+        #messageDisplay.overlay-message button {
+            display: none; /* Hide buttons for simple overlay messages like "Game Paused" */
         }
 
 
@@ -146,33 +178,33 @@
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
-            max-width: 350px; /* Slightly wider touch controls */
+            max-width: 350px;
             z-index: 20;
             justify-content: space-between;
             align-items: center;
-            gap: 1.5rem; /* Space between buttons */
+            gap: 1.5rem;
         }
         .touch-controls button {
-            background: linear-gradient(to bottom, #4a5568, #2d3748); /* Gradient */
+            background: linear-gradient(to bottom, #4a5568, #2d3748);
             color: white;
-            border: 2px solid #a0aec0; /* More prominent border */
+            border: 2px solid #a0aec0;
             border-radius: 50%;
-            width: 70px; /* Larger buttons */
+            width: 70px;
             height: 70px;
-            font-size: 28px; /* Larger icon */
+            font-size: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             user-select: none;
             -webkit-user-select: none;
             -ms-user-select: none;
-            box-shadow: 0 6px 10px rgba(0,0,0,0.4); /* Deeper shadow */
+            box-shadow: 0 6px 10px rgba(0,0,0,0.4);
             transition: all 0.2s ease-in-out;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
         .touch-controls button:active {
-            background: linear-gradient(to bottom, #2d3748, #1a202c); /* Darker on active */
-            transform: scale(0.9); /* More noticeable press */
+            background: linear-gradient(to bottom, #2d3748, #1a202c);
+            transform: scale(0.9);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         @media (hover: none) and (pointer: coarse) {
@@ -183,28 +215,28 @@
 
         /* Shop specific styles */
         #shopDisplay {
-            position: absolute;
+            position: fixed; /* Keep it fixed for overlay behavior */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(30, 41, 59, 0.98); /* Even darker, more opaque */
+            background-color: rgba(30, 41, 59, 0.98);
             color: #e2e8f0;
             padding: 2.5rem 3rem;
             border-radius: 0.75rem;
             text-align: center;
-            font-size: 1.3rem; /* Slightly larger */
+            font-size: 1.3rem;
             z-index: 15;
             display: none;
-            width: 85%; /* Wider */
-            max-width: 450px; /* Max width increased */
+            width: 85%;
+            max-width: 450px;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             border: 1px solid #4a5568;
         }
 
         #shopDisplay h2 {
-            font-size: 2.2rem; /* Larger heading */
+            font-size: 2.2rem;
             font-weight: bold;
-            margin-bottom: 2rem; /* More space */
+            margin-bottom: 2rem;
             color: #a0aec0;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
@@ -212,17 +244,17 @@
         #shopItemsContainer {
             display: flex;
             flex-direction: column;
-            gap: 1.25rem; /* More space between items */
+            gap: 1.25rem;
         }
 
         .shop-item-button {
-            background: linear-gradient(to right, #63b3ed, #4299e1); /* Gradient */
+            background: linear-gradient(to right, #63b3ed, #4299e1);
             color: #1a202c;
-            padding: 0.85rem 1.75rem; /* Larger padding */
+            padding: 0.85rem 1.75rem;
             border: none;
             border-radius: 0.5rem;
             cursor: pointer;
-            font-size: 1.2rem; /* Larger font */
+            font-size: 1.2rem;
             font-weight: 700;
             transition: all 0.2s ease-in-out;
             display: flex;
@@ -232,29 +264,29 @@
         }
 
         .shop-item-button:hover {
-            background: linear-gradient(to right, #4299e1, #3182ce); /* Darker gradient on hover */
-            transform: translateY(-3px); /* More noticeable lift */
+            background: linear-gradient(to right, #4299e1, #3182ce);
+            transform: translateY(-3px);
             box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
 
         .shop-item-button:disabled {
-            background: linear-gradient(to right, #718096, #5a67d8); /* Grayish gradient for disabled */
+            background: linear-gradient(to right, #718096, #5a67d8);
             cursor: not-allowed;
             opacity: 0.7;
             transform: none;
             box-shadow: none;
         }
 
-        .shop-item-button .ml-4 { /* Targeting the Buy button inside shop item */
-            background: linear-gradient(to right, #48bb78, #38a169); /* Green gradient */
+        .shop-item-button .ml-4 {
+            background: linear-gradient(to right, #48bb78, #38a169);
             color: white;
-            padding: 0.6rem 1.2rem; /* Adjusted padding for nested button */
+            padding: 0.6rem 1.2rem;
             border-radius: 0.4rem;
             font-size: 1rem;
             font-weight: 600;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .shop-item-button .ml-4:hover:enabled { /* Only apply hover if not disabled */
+        .shop-item-button .ml-4:hover:enabled {
             background: linear-gradient(to right, #38a169, #2f855a);
             transform: translateY(-1px);
         }
@@ -263,10 +295,10 @@
         }
 
         #closeShopBtn {
-            margin-top: 2.5rem; /* More margin */
-            padding: 0.75rem 2.25rem; /* Larger padding */
+            margin-top: 2.5rem;
+            padding: 0.75rem 2.25rem;
             font-size: 1.1rem;
-            background: linear-gradient(to right, #e53e3e, #c53030); /* Red gradient */
+            background: linear-gradient(to right, #e53e3e, #c53030);
             color: white;
             border: none;
             border-radius: 0.5rem;
@@ -278,11 +310,144 @@
         }
 
         #closeShopBtn:hover {
-            background: linear-gradient(to right, #c53030, #9b2c2c); /* Darker red gradient on hover */
+            background: linear-gradient(to right, #c53030, #9b2c2c);
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0,0,0,0.3);
         }
         #closeShopBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Settings menu styles */
+        #settingsDisplay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(30, 41, 59, 0.98);
+            color: #e2e8f0;
+            padding: 2.5rem 3rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 1.3rem;
+            z-index: 20; /* Higher z-index than shop */
+            display: none;
+            width: 85%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid #4a5568;
+        }
+
+        #settingsDisplay h2 {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            color: #a0aec0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            background-color: #4a5568; /* Slightly darker background for setting item */
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .setting-item label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #cbd5e0;
+        }
+
+        /* Toggle Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #48bb78; /* Green when checked */
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #48bb78;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        #closeSettingsBtn {
+            margin-top: 2.5rem;
+            padding: 0.75rem 2.25rem;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #e53e3e, #c53030);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        #closeSettingsBtn:hover {
+            background: linear-gradient(to right, #c53030, #9b2c2c);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        #closeSettingsBtn:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
@@ -293,8 +458,8 @@
             bottom: 10px;
             left: 10px;
             font-size: 0.9rem;
-            color: #a0aec0; /* Tailwind gray-400 */
-            z-index: 10; /* Ensure it's above canvas */
+            color: #a0aec0;
+            z-index: 10;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
@@ -302,29 +467,35 @@
             position: absolute;
             bottom: 10px;
             right: 10px;
-            font-size: 1.5rem; /* Larger icon */
-            color: #a0aec0; /* Tailwind gray-400 */
-            z-index: 10; /* Ensure it's above canvas */
+            font-size: 1.5rem;
+            color: #a0aec0;
+            z-index: 10;
             transition: color 0.2s ease-in-out;
         }
 
         #githubLink:hover {
-            color: #e2e8f0; /* Lighter on hover */
+            color: #e2e8f0;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <div id="uiContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="uiContainer" class="hidden">
+            <div class="flex items-center">
+                <button id="pauseButton" class="hidden">Pause</button>
+                <button id="settingsButtonInGame" class="hidden">Settings</button>
+            </div>
             <div id="scoreBoard">Score: 0</div>
             <div id="waveBoard">Wave: 1</div>
             <button id="shopButton" class="px-4 py-2 bg-purple-600 text-white rounded-md font-semibold hover:bg-purple-700 transition-colors">Shop</button>
-            <div id="livesCount">Lives: 3</div>
+            <div id="healthBarDisplay" class="w-32 h-6 bg-red-700 rounded-full overflow-hidden border-2 border-gray-400">
+                <div id="currentHealthBar" class="h-full bg-green-500 transition-all duration-100 ease-out"></div>
+            </div>
         </div>
-        <canvas id="gameCanvas"></canvas>
 
         <div id="credits">
-            <div>Version: 1.0.0</div>
             <div>Made by SuperYosh23 and Google Gemini</div>
         </div>
         <a id="githubLink" href="https://github.com/SuperYosh23" target="_blank" aria-label="My GitHub Profile">
@@ -336,9 +507,7 @@
         <p id="messageText"></p>
         <button id="startButton" class="hidden">Start Game</button>
         <button id="restartButton" class="hidden">Restart Game</button>
-        <button id="getTipButton" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors">Get a Game Tip ✨</button>
-        <div id="loadingSpinner"></div>
-    </div>
+        <button id="settingsButtonTitle" class="hidden">Settings</button> </div>
 
     <div id="shopDisplay" class="hidden">
         <h2>Shop</h2>
@@ -348,7 +517,24 @@
         <button id="closeShopBtn">Close Shop</button>
     </div>
 
-    <div id="lifeLostNotification" class="hidden">LIFE LOST!</div>
+    <div id="settingsDisplay" class="hidden">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label for="soundToggle">Sound Effects</label>
+            <label class="switch">
+                <input type="checkbox" id="soundToggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <label for="starsToggle">Background Stars</label>
+            <label class="switch">
+                <input type="checkbox" id="starsToggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <button id="closeSettingsBtn">Close Settings</button>
+    </div>
 
     <div class="touch-controls">
         <button id="touchLeftBtn">◀</button>
@@ -360,49 +546,71 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreBoard = document.getElementById('scoreBoard');
-        const livesCount = document.getElementById('livesCount');
         const waveBoard = document.getElementById('waveBoard');
         const messageDisplay = document.getElementById('messageDisplay');
         const messageText = document.getElementById('messageText');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
-        const getTipButton = document.getElementById('getTipButton');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const lifeLostNotification = document.getElementById('lifeLostNotification');
+        const settingsButtonTitle = document.getElementById('settingsButtonTitle'); // New settings button for title screen
+        const settingsButtonInGame = document.getElementById('settingsButtonInGame'); // New settings button for in-game UI
 
         const shopDisplay = document.getElementById('shopDisplay');
         const shopItemsContainer = document.getElementById('shopItemsContainer');
         const shopScoreDisplay = document.getElementById('shopScore');
         const closeShopBtn = document.getElementById('closeShopBtn');
         const shopButton = document.getElementById('shopButton');
+        const pauseButton = document.getElementById('pauseButton');
+
+        const settingsDisplay = document.getElementById('settingsDisplay'); // New settings display
+        const soundToggle = document.getElementById('soundToggle'); // New sound toggle switch
+        const starsToggle = document.getElementById('starsToggle'); // New stars toggle switch
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn'); // New close settings button
 
         const touchLeftBtn = document.getElementById('touchLeftBtn');
         const touchRightBtn = document.getElementById('touchRightBtn');
         const touchShootBtn = document.getElementById('touchShootBtn');
 
+        // New references for the health bar elements
+        const healthBarDisplay = document.getElementById('healthBarDisplay');
+        const currentHealthBar = document.getElementById('currentHealthBar');
+
         let gameWidth, gameHeight;
 
         let score = 0;
-        let lives = 3;
+        let playerHealth = 75; // Changed playerHealth default to 75
+        const playerMaxHealth = 75; // Changed playerMaxHealth to 75
         let wave = 1;
         let enemiesRequiredForWave = 15;
         let enemiesDefeatedInWave = 0;
-        const wavesPerBoss = 20;
+        var wavesPerBoss = 5; 
         let gameRunning = false;
         let shopOpen = false;
         let bossActive = false;
-        let animationFrameId;
+        let paused = false;
+        let wasGameRunningBeforeShop = false;
+        let wasGameRunningBeforeSettings = false; // New: to remember state before opening settings
+        let soundEnabled = true; // New: sound state
+        let starsEnabled = true; // New: stars state
+        let settingsOpen = false; // New: Flag to track if settings menu is open
+        let isTransitioningFromMenu = false; // Flag to prevent ghost clicks
 
-        // Global mouse position and activity tracker
+        let animationFrameId;
+        let titleAnimationId;
+
+        let bossFightsCompleted = 0;
+        const baseEnemySpeed = 2;
+        const speedIncreasePerBoss = 1.0;
+        const baseSpawnInterval = 1500;
+        const spawnIntervalDecreasePerWave = 75;
+
         const mouse = {
             x: 0,
             y: 0,
-            active: false // True if mouse has moved on canvas, false otherwise (e.g., touch device)
+            isOverCanvas: false
         };
 
-        // Constants for aim restriction
-        let MAX_AIM_DISTANCE = 250; // Max distance from player center (now mutable)
-        const MAX_AIM_ANGLE_RADIANS = Math.PI / 6; // 30 degrees (Math.PI / 6)
+        let MAX_AIM_DISTANCE = 250;
+        const MAX_AIM_ANGLE_RADIANS = Math.PI / 6;
 
         const player = {
             x: 0,
@@ -410,51 +618,52 @@
             width: 50,
             height: 50,
             color: '#4299e1',
-            currentAngle: -Math.PI / 2, // Initial angle: straight up (-90 degrees or -PI/2 radians)
-            targetAngle: -Math.PI / 2, // Target angle for aiming
-            rotationSpeed: 0.1, // How fast the player rotates towards the target (0.0 to 1.0)
+            currentAngle: -Math.PI / 2,
+            targetAngle: -Math.PI / 2,
+            rotationSpeed: 1.0, 
+            dx: 0,
+            dy: 0,
+            initialY: 0,
+            titleAnimationOffset: 0,
+            titleAnimationDirection: 1,
+            titleAnimationSpeed: 0.5,
+            titleAnimationMaxOffset: 10,
             draw: function() {
-                ctx.save(); // Save the current canvas state
+                ctx.save();
 
-                // Translate to the center of the player for rotation
                 ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-                // Rotate the context by the player's current angle (adjusted for default upward orientation)
                 ctx.rotate(this.currentAngle + Math.PI / 2);
 
-                // Draw player shape relative to its new center (0,0 after translate)
                 const bodyGradient = ctx.createLinearGradient(-this.width / 2, -this.height / 2, this.width / 2, this.height / 2);
-                bodyGradient.addColorStop(0, '#4299e1'); // Blue-500
-                bodyGradient.addColorStop(0.5, '#63b3ed'); // Blue-300
+                bodyGradient.addColorStop(0, '#4299e1');
+                bodyGradient.addColorStop(0.5, '#63b3ed');
                 bodyGradient.addColorStop(1, '#4299e1');
                 ctx.fillStyle = bodyGradient;
 
                 ctx.beginPath();
-                ctx.moveTo(0, -this.height / 2); // Top point (relative to new origin)
-                ctx.lineTo(-this.width * 0.4, this.height * 0.2); // Left side, mid-bottom
-                ctx.lineTo(-this.width * 0.3, this.height / 2); // Bottom-left tip
-                ctx.lineTo(this.width * 0.3, this.height / 2); // Bottom-right tip
-                ctx.lineTo(this.width * 0.4, this.height * 0.2); // Right side, mid-bottom
+                ctx.moveTo(0, -this.height / 2);
+                ctx.lineTo(-this.width * 0.4, this.height * 0.2);
+                ctx.lineTo(-this.width * 0.3, this.height / 2);
+                ctx.lineTo(this.width * 0.3, this.height / 2);
+                ctx.lineTo(this.width * 0.4, this.height * 0.2);
                 ctx.closePath();
                 ctx.fill();
 
-                // Cockpit
-                ctx.fillStyle = '#a78bfa'; // Purple-300
+                ctx.fillStyle = '#a78bfa';
                 ctx.beginPath();
-                ctx.arc(0, -this.height * 0.1, 8, 0, Math.PI * 2); // Cockpit (relative to new origin)
+                ctx.arc(0, -this.height * 0.1, 8, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Thrusters (simple rectangles for now)
-                ctx.fillStyle = '#f56565'; // Red-500 for thruster glow
-                ctx.fillRect(-this.width * 0.2, this.height / 2 - 5, this.width * 0.15, 10); // Thruster left
-                ctx.fillRect(this.width * 0.05, this.height / 2 - 5, this.width * 0.15, 10); // Thruster right
+                ctx.fillStyle = '#f56565';
+                ctx.fillRect(-this.width * 0.2, this.height / 2 - 5, this.width * 0.15, 10);
+                ctx.fillRect(this.width * 0.05, this.height / 2 - 5, this.width * 0.15, 10);
 
-                // Exhaust glow (more dynamic)
                 if (gameRunning) {
                     const exhaustHeight = Math.random() * 10 + 5;
                     const exhaustGradient = ctx.createLinearGradient(0, this.height / 2, 0, this.height / 2 + exhaustHeight);
-                    exhaustGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)'); // Orange
-                    exhaustGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)'); // Yellow
-                    exhaustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Transparent
+                    exhaustGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)');
+                    exhaustGradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)');
+                    exhaustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
                     ctx.fillStyle = exhaustGradient;
                     ctx.beginPath();
                     ctx.moveTo(-this.width * 0.2, this.height / 2);
@@ -465,10 +674,9 @@
                     ctx.fill();
                 }
 
-                ctx.restore(); // Restore the canvas state to before translation and rotation
+                ctx.restore();
             },
             speed: 7,
-            dx: 0
         };
 
         const bullets = [];
@@ -477,13 +685,10 @@
             height: 15,
             color: '#f56565',
             draw: function(bullet) {
-                ctx.save(); // Save the current canvas state for bullet rotation
-                // Translate to the center of the bullet
+                ctx.save();
                 ctx.translate(bullet.x + this.width / 2, bullet.y + this.height / 2);
-                // Rotate the context by the bullet's angle (adjusted for default vertical drawing)
                 ctx.rotate(bullet.angle + Math.PI / 2);
 
-                // Draw bullet shape relative to its new center (0,0 after translate)
                 ctx.fillStyle = this.color;
                 ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
                 ctx.fillStyle = '#ff7777';
@@ -492,60 +697,76 @@
                 ctx.fillStyle = 'rgba(255, 200, 0, 0.5)';
                 ctx.fillRect(-this.width / 2, this.height / 2, this.width, this.height * 0.5);
 
-                ctx.restore(); // Restore the canvas state
+                ctx.restore();
             },
             speed: 10,
             cooldown: 250,
             lastShotTime: 0
         };
 
+        const enemyTypes = [
+            {
+                name: 'small',
+                width: 40,
+                height: 30,
+                health: 10,
+                baseSpeed: baseEnemySpeed,
+                colors: ['#48bb78', '#38a169', '#68d391'],
+                canShoot: false,
+                scoreValue: 10
+            },
+            {
+                name: 'medium',
+                width: 60,
+                height: 45,
+                health: 20,
+                baseSpeed: baseEnemySpeed * 0.8,
+                colors: ['#f6ad55', '#ed8936', '#dd6b20'],
+                canShoot: true,
+                bulletSpeed: 5,
+                shootCooldown: 3000,
+                scoreValue: 30
+            },
+            {
+                name: 'large',
+                width: 80,
+                height: 60,
+                health: 30,
+                baseSpeed: baseEnemySpeed * 0.6,
+                colors: ['#e53e3e', '#c53030', '#9b2c2c'],
+                canShoot: true,
+                bulletSpeed: 7,
+                shootCooldown: 4000,
+                scoreValue: 60
+            }
+        ];
+
         const enemies = [];
         const enemyProps = {
-            width: 40,
-            height: 30,
-            colors: ['#48bb78', '#38a169', '#68d391'],
-            draw: function(enemy) {
-                const color = enemy.color || this.colors [0];
-                ctx.fillStyle = color;
+            spawnInterval: baseSpawnInterval,
+            lastSpawnTime: 0
+        };
 
+        const enemyBullets = [];
+        const enemyBulletProps = {
+            width: 12,
+            height: 12,
+            color: '#FF0000',
+            draw: function(bullet) {
+                ctx.fillStyle = this.color;
                 ctx.beginPath();
-                ctx.moveTo(enemy.x + this.width / 2, enemy.y);
-                ctx.lineTo(enemy.x, enemy.y + this.height * 0.3);
-                ctx.lineTo(enemy.x, enemy.y + this.height * 0.7);
-                ctx.lineTo(enemy.x + this.width / 2, enemy.y + this.height);
-                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.7);
-                ctx.lineTo(enemy.x + this.width, enemy.y + this.height * 0.3);
-                ctx.closePath();
+                ctx.arc(bullet.x, bullet.y, this.width / 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                const eyeCenterX = enemy.x + this.width / 2;
-                const eyeCenterY = enemy.y + this.height / 2;
-                const eyeRadius = 8;
-
-                const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
-                glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
-                glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
-                ctx.fillStyle = glowGradient;
+                const gradient = ctx.createRadialGradient(bullet.x, bullet.y, 0, bullet.x, bullet.y, this.width / 2 + 5);
+                gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#f7fafc';
-                ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#2d3748';
-                ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
+                ctx.arc(bullet.x, bullet.y, this.width / 2 + 5, 0, Math.PI * 2);
                 ctx.fill();
             },
-            speed: 2,
-            spawnInterval: 1500,
-            lastSpawnTime: 0
+            damage: 10
         };
 
         const boss = {
@@ -553,6 +774,9 @@
             health: 0, maxHealth: 0,
             speed: 1, dx: 1,
             color: '#e53e3e',
+            bulletSpeed: 6,
+            shootCooldown: 1000,
+            lastShotTime: 0,
 
             draw: function() {
                 ctx.fillStyle = this.color;
@@ -603,20 +827,24 @@
             startTime: 0
         };
 
-        // New aim indicator properties
         const aimIndicator = {
             x: 0,
             y: 0,
-            radius: 5,
-            color: '#00ff00', // Green
+            radius: 8,
+            color: '#FFFF00',
             draw: function() {
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fill();
+
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2);
+                ctx.stroke();
             }
         };
-
 
         const shopItems = {
             'bulletSpeed': {
@@ -634,13 +862,13 @@
                         `${this.name} (Max Lv.)`;
                 }
             },
-            'extraLife': {
-                id: 'extraLife',
-                name: 'Extra Life',
+            'healthPack': {
+                id: 'healthPack',
+                name: 'Health Pack',
                 baseCost: 200,
                 currentLevel: 0,
-                effect: () => { lives++; updateLivesDisplay(); },
-                description: 'Gain 1 extra life.',
+                effect: () => { playerHealth = Math.min(playerMaxHealth, playerHealth + 50); updateHealthDisplay(); },
+                description: 'Restores 50 health (max 100).',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.25)); },
                 getDisplayName: function() { return this.name; }
             },
@@ -659,13 +887,13 @@
                         `${this.name} (Max Lv.)`;
                 }
             },
-            'bulletRange': { // New shop item for bullet range
+            'bulletRange': {
                 id: 'bulletRange',
                 name: 'Extended Range',
                 baseCost: 120,
                 currentLevel: 0,
                 maxLevel: 3,
-                effect: () => { MAX_AIM_DISTANCE += 50; }, // Increase MAX_AIM_DISTANCE
+                effect: () => { MAX_AIM_DISTANCE += 50; },
                 description: 'Increases bullet travel distance.',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.6)); },
                 getDisplayName: function() {
@@ -675,6 +903,52 @@
                 }
             }
         };
+
+        // --- Tone.js Sound Effects ---
+        const playerSynth = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: {
+                attack: 0.001,
+                decay: 0.1,
+                sustain: 0.05,
+                release: 0.1
+            },
+            volume: -10
+        }).toDestination();
+
+        const enemySynth = new Tone.Synth({
+            oscillator: { type: "sine" },
+            envelope: {
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.05,
+                release: 0.2
+            },
+            volume: -15
+        }).toDestination();
+
+        function playPlayerShootSound() {
+            if (soundEnabled) {
+                playerSynth.triggerAttackRelease("C4", "8n");
+            }
+        }
+
+        function playEnemyShootSound() {
+            if (soundEnabled) {
+                enemySynth.triggerAttackRelease("A3", "8n");
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = soundToggle.checked;
+            Tone.Master.mute = !soundEnabled; // Mute Tone.js master output if sound is disabled
+            console.log("Sound Enabled:", soundEnabled);
+        }
+
+        function toggleStars() {
+            starsEnabled = starsToggle.checked;
+            console.log("Stars Enabled:", starsEnabled);
+        }
 
         function initializeStars() {
             stars.length = 0;
@@ -690,6 +964,7 @@
         }
 
         function drawStars() {
+            if (!starsEnabled) return; // Only draw stars if enabled
             ctx.fillStyle = '#ffffff';
             stars.forEach(star => {
                 ctx.globalAlpha = star.alpha;
@@ -701,6 +976,7 @@
         }
 
         function updateStars() {
+            if (!starsEnabled) return; // Only update stars if enabled
             stars.forEach(star => {
                 star.y += star.speed;
                 if (star.y > gameHeight) {
@@ -711,61 +987,155 @@
         }
 
         function resizeCanvas() {
-            const uiHeight = document.getElementById('uiContainer').offsetHeight;
-            const gameContainer = document.getElementById('gameContainer');
-
-            // Calculate available space in the window for the game area
-            const availableWidth = window.innerWidth * 0.95; // 95% of window width
-            const availableHeight = window.innerHeight * 0.95 - uiHeight; // 95% of window height minus UI
-
-            // Desired aspect ratio 16:9
-            const aspectRatio = 16 / 9;
-
-            let newWidth = availableWidth;
-            let newHeight = availableWidth / aspectRatio;
-
-            // If calculated height exceeds available height, adjust based on height
-            if (newHeight > availableHeight) {
-                newHeight = availableHeight;
-                newWidth = availableHeight * aspectRatio;
-            }
-
-            // Apply calculated dimensions to canvas
-            canvas.width = newWidth;
-            canvas.height = newHeight;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
             gameWidth = canvas.width;
             gameHeight = canvas.height;
+            console.log(`resizeCanvas: Canvas resized to Width: ${gameWidth}, Height: ${gameHeight}`);
 
-            // Adjust gameContainer size to match canvas size
-            gameContainer.style.width = `${newWidth}px`;
-            gameContainer.style.height = `${newHeight + uiHeight}px`; // Add UI height back
 
             player.x = gameWidth / 2 - player.width / 2;
-            // Adjusted player Y position to ensure it's fully visible
-            player.y = gameHeight - player.height - 50; // Keep at -50 for good visibility
+            player.y = gameHeight - player.height - 50;
+            player.initialY = player.y;
 
-            messageDisplay.style.fontSize = `${Math.max(16, canvas.width / 25)}px`;
-            shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`;
+            messageDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 50)}px`;
+            shopDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
+            settingsDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
 
             initializeStars();
         }
 
+        // Removed drawPlayerHealthBar() as health is now an HTML element
+
         function drawPlayer() {
             player.draw();
+            // No longer calling drawPlayerHealthBar() here
         }
 
         function drawBullet(bullet) {
             bulletProps.draw(bullet);
         }
 
-        function drawEnemy(enemy) {
-            enemyProps.draw(enemy);
+        function drawGenericEnemy(enemy) {
+            const type = enemy.type;
+            const color = type.colors[0];
+            ctx.fillStyle = color;
+
+            ctx.beginPath();
+            ctx.moveTo(enemy.x + type.width / 2, enemy.y);
+            ctx.lineTo(enemy.x, enemy.y + type.height * 0.3);
+            ctx.lineTo(enemy.x, enemy.y + type.height * 0.7);
+            ctx.lineTo(enemy.x + type.width / 2, enemy.y + type.height);
+            ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.7);
+            ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.3);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            const eyeCenterX = enemy.x + type.width / 2;
+            const eyeCenterY = enemy.y + type.height / 2;
+            const eyeRadius = 8 * (type.width / 40);
+
+            const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
+            glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
+            glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f7fafc';
+            ctx.beginPath();
+            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#2d3748';
+            ctx.beginPath();
+            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (type.health > 10) {
+                const healthBarWidth = type.width * 0.8;
+                const healthBarHeight = 5;
+                const healthBarX = enemy.x + (type.width - healthBarWidth) / 2;
+                const healthBarY = enemy.y - 10;
+
+                ctx.fillStyle = '#c53030';
+                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+                const currentHealthWidth = (enemy.health / type.health) * healthBarWidth;
+                ctx.fillStyle = '#48bb78';
+                ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            }
+        }
+
+        function shootEnemyBullet(enemy) {
+            const currentTime = Date.now();
+            if (currentTime - enemy.lastShotTime > enemy.type.shootCooldown) {
+                const startX = enemy.x + enemy.type.width / 2;
+                const startY = enemy.y + enemy.type.height;
+
+                const playerCenterX = player.x + player.width / 2;
+                const playerCenterY = player.y + player.height / 2;
+
+                const angle = Math.atan2(playerCenterY - startY, playerCenterX - startX);
+
+                const bulletDx = enemy.type.bulletSpeed * Math.cos(angle);
+                const bulletDy = enemy.type.bulletSpeed * Math.sin(angle);
+
+                enemyBullets.push({
+                    x: startX,
+                    y: startY,
+                    dx: bulletDx,
+                    dy: bulletDy,
+                    angle: angle
+                });
+                enemy.lastShotTime = currentTime;
+                playEnemyShootSound();
+            }
+        }
+
+        function shootBossBullet(boss) {
+            const currentTime = Date.now();
+            if (currentTime - boss.lastShotTime > boss.shootCooldown) {
+                const startX = boss.x + boss.width / 2;
+                const startY = boss.y + boss.height;
+
+                const playerCenterX = player.x + player.width / 2;
+                const playerCenterY = player.y + player.height / 2;
+
+                const angle = Math.atan2(playerCenterY - startY, playerCenterX - startX);
+
+                const bulletDx = boss.bulletSpeed * Math.cos(angle);
+                const bulletDy = boss.bulletSpeed * Math.sin(angle);
+
+                enemyBullets.push({
+                    x: startX,
+                    y: startY,
+                    dx: bulletDx,
+                    dy: bulletDy,
+                    angle: angle
+                });
+                boss.lastShotTime = currentTime;
+                playEnemyShootSound();
+            }
         }
 
         function updatePlayer() {
             player.x += player.dx;
+            player.y += player.dy;
+
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > gameWidth) player.x = gameWidth - player.width;
+
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > gameHeight) player.y = gameHeight - player.height;
         }
 
         function updateBullets() {
@@ -774,10 +1144,8 @@
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
 
-                // Calculate current squared distance from bullet's starting point to its current position
                 const currentDistanceSq = (bullet.x + bulletProps.width/2 - bullet.startX)**2 + (bullet.y + bulletProps.height/2 - bullet.startY)**2;
 
-                // Remove bullet if it has reached or passed its target, or if it goes off-screen
                 if (currentDistanceSq >= bullet.totalTargetDistanceSq ||
                     bullet.y + bulletProps.height < 0 || bullet.y > gameHeight ||
                     bullet.x + bulletProps.width < 0 || bullet.x > gameWidth) {
@@ -786,36 +1154,88 @@
             }
         }
 
+        function updateEnemyBullets() {
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+
+                if (bullet.y > gameHeight || bullet.x < 0 || bullet.x > gameWidth) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+        }
+
+        const enemySpawnWeights = {
+            'small': 5,
+            'medium': 2,
+            'large': 1
+        };
+
         function spawnEnemy() {
             const currentTime = Date.now();
             if (bossActive) {
-                return;
-            }
-
-            // Check if it's a boss wave and no enemies are left
-            if (wave > 0 && wave % wavesPerBoss === 0 && enemies.length === 0 && !bossActive) {
-                startBossFight();
+                const selectedEnemyType = enemyTypes[0];
+                const x = Math.random() * (gameWidth - selectedEnemyType.width);
+                const y = -selectedEnemyType.height;
+                enemies.push({
+                    x,
+                    y,
+                    type: selectedEnemyType,
+                    health: selectedEnemyType.health,
+                    lastShotTime: currentTime
+                });
+                enemyProps.lastSpawnTime = currentTime;
                 return;
             }
 
             if (currentTime - enemyProps.lastSpawnTime > enemyProps.spawnInterval) {
-                const x = Math.random() * (gameWidth - enemyProps.width);
-                const y = -enemyProps.height;
-                const randomColor = enemyProps.colors[Math.floor(Math.random() * enemyProps.colors.length)];
-                enemies.push({ x, y, color: randomColor });
-                enemyProps.lastSpawnTime = currentTime;
+                let currentWeights = {};
+                if (wave <= 1) {
+                    currentWeights = { 'small': enemySpawnWeights.small };
+                } else if (wave <= 3) {
+                    currentWeights = { 'small': enemySpawnWeights.small, 'medium': enemySpawnWeights.medium };
+                } else {
+                    currentWeights = enemySpawnWeights;
+                }
 
-                // Increase difficulty based on wave
-                enemyProps.speed = 2 + Math.floor((wave - 1) / 5) * 0.5;
-                enemyProps.spawnInterval = Math.max(300, 1500 - (wave - 1) * 20);
+                let weightedEnemyTypes = [];
+                for (const typeName in currentWeights) {
+                    const weight = currentWeights[typeName];
+                    const enemyType = enemyTypes.find(et => et.name === typeName);
+                    if (enemyType) {
+                        for (let i = 0; i < weight; i++) {
+                            weightedEnemyTypes.push(enemyType);
+                        }
+                    }
+                }
+
+                const selectedEnemyType = weightedEnemyTypes[Math.floor(Math.random() * weightedEnemyTypes.length)];
+
+                const x = Math.random() * (gameWidth - selectedEnemyType.width);
+                const y = -selectedEnemyType.height;
+
+                enemies.push({
+                    x,
+                    y,
+                    type: selectedEnemyType,
+                    health: selectedEnemyType.health,
+                    lastShotTime: currentTime
+                });
+                enemyProps.lastSpawnTime = currentTime;
             }
         }
 
         function updateEnemies() {
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
-                enemy.y += enemyProps.speed;
-                if (enemy.y + enemyProps.height > gameHeight) {
+                enemy.y += enemy.type.baseSpeed + (bossFightsCompleted * speedIncreasePerBoss);
+
+                if (enemy.type.canShoot) {
+                    shootEnemyBullet(enemy);
+                }
+
+                if (enemy.y + enemy.type.height > gameHeight) {
                     enemies.splice(i, 1);
                 }
             }
@@ -833,41 +1253,41 @@
             if (boss.y < gameHeight * 0.2) {
                 boss.y += boss.speed * 0.5;
             }
+
+            shootBossBullet(boss);
         }
 
         function checkCollisions() {
-            // Bullet-Enemy collision
             for (let i = bullets.length - 1; i >= 0; i--) {
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     const bullet = bullets [i];
                     const enemy = enemies [j];
                     if (bullet && enemy &&
-                        bullet.x < enemy.x + enemyProps.width &&
+                        bullet.x < enemy.x + enemy.type.width &&
                         bullet.x + bulletProps.width > enemy.x &&
-                        bullet.y < enemy.y + enemyProps.height &&
+                        bullet.y < enemy.y + enemy.type.height &&
                         bullet.y + bulletProps.height > enemy.y
                     ) {
                         bullets.splice(i, 1);
-                        enemies.splice(j, 1);
-                        score += 10;
-                        enemiesDefeatedInWave++;
-                        updateScoreDisplay();
-
-                        // Check for wave progression
-                        if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
-                            wave++;
-                            enemiesDefeatedInWave = 0;
-                            enemiesRequiredForWave = 15 + Math.floor((wave - 1) / 5) * 5;
+                        enemy.health -= 10;
+                        if (enemy.health <= 0) {
+                            enemies.splice(j, 1);
+                            score += enemy.type.scoreValue;
+                            enemiesDefeatedInWave++;
                             updateScoreDisplay();
-                            messageText.textContent = `Wave ${wave} Incoming!`;
-                            messageDisplay.style.display = 'block';
-                            setTimeout(() => {
-                                messageDisplay.style.display = 'none';
-                            }, 2000);
 
-                            if (wave % wavesPerBoss === 0) {
-                                enemies.length = 0;
-                                startBossFight();
+                            if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
+                                wave++;
+                                enemiesDefeatedInWave = 0;
+                                enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
+                                console.log(`Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
+                                updateScoreDisplay();
+                                showOverlayMessage(`Wave ${wave} Incoming!`);
+
+                                if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
+                                    enemies.length = 0;
+                                    startBossFight();
+                                }
                             }
                         }
                         break;
@@ -875,7 +1295,6 @@
                 }
             }
 
-            // Bullet-Boss collision
             if (bossActive) {
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const bullet = bullets[i];
@@ -886,7 +1305,7 @@
                         bullet.y + bulletProps.height > boss.y
                     ) {
                         bullets.splice(i, 1);
-                        boss.health -= 10;
+                        boss.health -= 1;
                         updateBossHealthDisplay();
                         if (boss.health <= 0) {
                             defeatBoss();
@@ -896,22 +1315,34 @@
                 }
             }
 
-            // Player-Enemy collision
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
                 if (
-                    player.x < enemy.x + enemyProps.width &&
+                    player.x < enemy.x + enemy.type.width &&
                     player.x + player.width > enemy.x &&
-                    player.y < enemy.y + enemyProps.height &&
+                    player.y < enemy.y + player.height &&
                     player.y + player.height > enemy.y
                 ) {
                     enemies.splice(i, 1);
-                    loseLife('player-enemy collision');
+                    takeDamage(5, 'enemy collision');
                     break;
                 }
             }
 
-            // Player-Boss collision
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const eBullet = enemyBullets[i];
+                if (
+                    eBullet.x < player.x + player.width &&
+                    eBullet.x + enemyBulletProps.width > player.x &&
+                    eBullet.y < player.y + player.height &&
+                    eBullet.y + enemyBulletProps.height > player.y
+                ) {
+                    enemyBullets.splice(i, 1);
+                    takeDamage(enemyBulletProps.damage, 'enemy bullet');
+                    break;
+                }
+            }
+
             if (bossActive) {
                 if (
                     player.x < boss.x + boss.width &&
@@ -919,7 +1350,7 @@
                     player.y < boss.y + boss.height &&
                     player.y + player.height > boss.y
                 ) {
-                    loseLife('player-boss collision');
+                    takeDamage(50, 'boss collision');
                     return;
                 }
             }
@@ -928,37 +1359,33 @@
         function shoot() {
             const currentTime = Date.now();
             if (currentTime - bulletProps.lastShotTime > bulletProps.cooldown) {
-                // Bullet starts from player's center
                 const startX = player.x + player.width / 2;
                 const startY = player.y + player.height / 2;
 
-                // Calculate direction from player center to aim indicator
                 const targetX = aimIndicator.x;
                 const targetY = aimIndicator.y;
 
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
-                const angle = Math.atan2(deltaY, deltaX); // Angle for bullet movement and drawing
+                const angle = Math.atan2(deltaY, deltaX);
 
                 const bulletDx = bulletProps.speed * Math.cos(angle);
                 const bulletDy = bulletProps.speed * Math.sin(angle);
 
-                // Calculate total distance to target for bullet destruction
                 const totalTargetDistanceSq = (targetX - startX)**2 + (targetY - startY)**2;
 
                 bullets.push({
-                    x: startX - bulletProps.width / 2, // Adjust for bullet width to be centered
-                    y: startY - bulletProps.height / 2, // Adjust for bullet height to be centered
+                    x: startX - bulletProps.width / 2,
+                    y: startY - bulletProps.height / 2,
                     dx: bulletDx,
                     dy: bulletDy,
-                    startX: startX, // Store initial position for distance calculation
+                    startX: startX,
                     startY: startY,
-                    targetX: targetX, // Store target position
-                    targetY: targetY,
-                    totalTargetDistanceSq: totalTargetDistanceSq, // Store total squared distance
-                    angle: angle // Store angle for drawing
+                    totalTargetDistanceSq: totalTargetDistanceSq,
+                    angle: angle
                 });
                 bulletProps.lastShotTime = currentTime;
+                playPlayerShootSound();
             }
         }
 
@@ -967,33 +1394,35 @@
             waveBoard.textContent = `Wave: ${wave}`;
         }
 
-        function updateLivesDisplay() {
-            livesCount.textContent = `Lives: ${lives}`;
+        function updateHealthDisplay() {
+            const healthPercentage = (playerHealth / playerMaxHealth) * 100;
+            currentHealthBar.style.width = `${healthPercentage}%`;
+            // You can also change the color based on health percentage if desired
+            if (healthPercentage > 50) {
+                currentHealthBar.style.backgroundColor = '#48bb78'; // Green
+            } else if (healthPercentage > 20) {
+                currentHealthBar.style.backgroundColor = '#f6ad55'; // Orange
+            } else {
+                currentHealthBar.style.backgroundColor = '#e53e3e'; // Red
+            }
         }
 
         function updateBossHealthDisplay() {
             // Health bar is drawn directly in boss.draw()
         }
 
-        function loseLife(reason = 'unknown cause') {
-            console.log(`Life lost due to: ${reason}`);
-            lives--;
-            updateLivesDisplay();
-
-            lifeLostNotification.classList.remove('hidden');
-            lifeLostNotification.style.animation = 'none';
-            void lifeLostNotification.offsetWidth;
-            lifeLostNotification.style.animation = 'fadeOut 2s forwards';
-
-            score = Math.floor(score / 2);
-            updateScoreDisplay();
-
-            player.x = gameWidth / 2 - player.width / 2;
+        function takeDamage(amount, reason = 'unknown cause') {
+            console.log(`Player took ${amount} damage due to: ${reason}`);
+            playerHealth -= amount;
+            if (playerHealth < 0) {
+                playerHealth = 0;
+            }
+            updateHealthDisplay();
 
             flashEffect.active = true;
             flashEffect.startTime = Date.now();
 
-            if (lives <= 0) {
+            if (playerHealth <= 0) {
                 gameOver();
             }
         }
@@ -1001,74 +1430,111 @@
         function gameOver() {
             gameRunning = false;
             bossActive = false;
+            paused = false;
             cancelAnimationFrame(animationFrameId);
+            
             messageText.textContent = `Game Over! Final Score: ${score}`;
-            messageDisplay.style.display = 'block';
-            restartButton.classList.remove('hidden');
+            messageDisplay.style.display = 'flex';
             startButton.classList.add('hidden');
-            getTipButton.classList.remove('hidden');
+            restartButton.classList.remove('hidden');
+            settingsButtonTitle.classList.remove('hidden'); // Show settings button on game over screen
+
+            messageDisplay.classList.remove('overlay-message');
+            
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button
+
+            startTitleAnimation();
         }
+
+        function showOverlayMessage(message) {
+            messageText.textContent = message;
+            messageDisplay.style.display = 'block';
+            messageDisplay.classList.add('overlay-message');
+            startButton.classList.add('hidden');
+            restartButton.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden'); // Hide settings button for simple messages
+
+            setTimeout(() => {
+                messageDisplay.style.display = 'none';
+                messageDisplay.classList.remove('overlay-message');
+            }, 2000);
+        }
+
 
         function startBossFight() {
             bossActive = true;
             enemies.length = 0;
-            boss.maxHealth = 100 + (Math.floor(wave / wavesPerBoss) - 1) * 50;
+            boss.maxHealth = 100 + (Math.floor(wave / wavesPerBoss) - 1) * 100;
             boss.health = boss.maxHealth;
             boss.width = gameWidth * 0.6;
             boss.height = 80;
             boss.x = gameWidth / 2 - boss.width / 2;
             boss.y = -boss.height;
-            boss.speed = 1 + (Math.floor(wave / wavesPerBoss) - 1) * 0.2;
+            boss.speed = 1 + (Math.floor(wave / wavesPerBoss) - 1) * 0.5;
             boss.dx = boss.speed;
+            boss.lastShotTime = Date.now();
             updateBossHealthDisplay();
-            messageText.textContent = "BOSS BATTLE INCOMING!";
-            messageDisplay.style.display = 'block';
-            startButton.classList.add('hidden');
-            restartButton.classList.add('hidden');
-            getTipButton.classList.add('hidden');
-
-            setTimeout(() => {
-                messageDisplay.style.display = 'none';
-            }, 3000);
+            showOverlayMessage("BOSS BATTLE INCOMING!");
         }
 
         function defeatBoss() {
             bossActive = false;
             score += 500;
             updateScoreDisplay();
-            messageText.textContent = `Boss Defeated! Wave ${wave + 1} Incoming!`;
-            messageDisplay.style.display = 'block';
-            setTimeout(() => {
-                messageDisplay.style.display = 'none';
-            }, 3000);
+            showOverlayMessage(`Boss Defeated! Wave ${wave + 1} Incoming!`);
+
+            bossFightsCompleted++;
+            enemyProps.spawnInterval = baseSpawnInterval;
+            console.log(`Boss Defeated! New Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval Reset: ${enemyProps.spawnInterval}`);
+
             wave++;
             enemiesDefeatedInWave = 0;
-            enemiesRequiredForWave = 15 + Math.floor((wave - 1) / 5) * 5;
-            enemyProps.spawnInterval = 1500;
-            enemyProps.speed = 2;
+            enemiesRequiredForWave = 15;
             enemies.length = 0;
+            enemyBullets.length = 0;
         }
 
         function startGame() {
+            console.log("startGame called.");
+            if (titleAnimationId) {
+                cancelAnimationFrame(titleAnimationId);
+                titleAnimationId = null;
+            }
+
             score = 0;
-            lives = 3;
+            playerHealth = playerMaxHealth; // Initialize playerHealth to the new playerMaxHealth
             wave = 1;
             enemiesRequiredForWave = 15;
             enemiesDefeatedInWave = 0;
             gameRunning = true;
+            shopOpen = false;
             bossActive = false;
+            paused = false;
+            settingsOpen = false; // Ensure settings are closed when game starts
             bullets.length = 0;
             enemies.length = 0;
-            enemyProps.spawnInterval = 1500;
-            enemyProps.speed = 2;
+            enemyBullets.length = 0;
+            
+            bossFightsCompleted = 0;
+            enemyProps.spawnInterval = baseSpawnInterval;
             enemyProps.lastSpawnTime = Date.now();
+            console.log(`Game Started! Initial Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval: ${enemyProps.spawnInterval}`);
+
             bulletProps.lastShotTime = 0;
             player.dx = 0;
-            player.currentAngle = -Math.PI / 2; // Reset player angle to straight up
+            player.dy = 0;
+            player.currentAngle = -Math.PI / 2;
             player.targetAngle = -Math.PI / 2;
+            player.y = player.initialY;
+            player.titleAnimationOffset = 0;
 
-            // Reset MAX_AIM_DISTANCE when starting a new game
-            MAX_AIM_DISTANCE = 250; 
+            MAX_AIM_DISTANCE = 250;
             for (const key in shopItems) {
                 shopItems [key].currentLevel = 0;
             }
@@ -1076,37 +1542,224 @@
             bulletProps.speed = 10;
 
             updateScoreDisplay();
-            updateLivesDisplay();
-            resizeCanvas();
+            updateHealthDisplay(); // Call to update the new HTML health bar
+            resizeCanvas(); // Ensure canvas is correctly sized before drawing
 
             messageDisplay.style.display = 'none';
+            messageDisplay.classList.remove('overlay-message');
+            
             startButton.classList.add('hidden');
             restartButton.classList.add('hidden');
-            getTipButton.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden'); // Hide title settings button
+            settingsDisplay.style.display = 'none'; // Explicitly hide settings display on game start
+
+            // Show game UI elements
+            uiContainer.classList.remove('hidden');
+            scoreBoard.classList.remove('hidden');
+            waveBoard.classList.remove('hidden');
+            healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+            shopButton.classList.remove('hidden');
+            pauseButton.classList.remove('hidden');
+            settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
 
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
+            console.log("startGame finished. gameRunning:", gameRunning);
+        };
+
+        function pauseGame() {
+            if (!gameRunning || paused || shopOpen || settingsOpen) return; // Use settingsOpen flag
+            paused = true;
+            cancelAnimationFrame(animationFrameId);
+            showOverlayMessage("Game Paused");
+            console.log("Game Paused. gameRunning:", gameRunning, "paused:", paused);
+
+            // Hide game UI elements during pause
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button
+        }
+
+        function resumeGame() {
+            if (!gameRunning || !paused || shopOpen || settingsOpen) return; // Use settingsOpen flag
+            paused = false;
+            messageDisplay.style.display = 'none';
+            messageDisplay.classList.remove('overlay-message');
+            console.log("Game Resumed. gameRunning:", gameRunning, "paused:", paused);
+
+            // Show game UI elements
+            uiContainer.classList.remove('hidden');
+            scoreBoard.classList.remove('hidden');
+            waveBoard.classList.remove('hidden');
+            healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+            shopButton.classList.remove('hidden');
+            pauseButton.classList.remove('hidden');
+            settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
+            animationFrameId = requestAnimationFrame(gameLoopWithInput);
+        }
+
+        function togglePause() {
+            if (gameRunning && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+                if (paused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
+            }
         }
 
         function openShop() {
+            wasGameRunningBeforeShop = gameRunning;
+            console.log("openShop called. gameRunning before:", gameRunning, "wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
+
             if (gameRunning) {
                 gameRunning = false;
                 cancelAnimationFrame(animationFrameId);
             }
+            if (titleAnimationId) {
+                cancelAnimationFrame(titleAnimationId);
+                titleAnimationId = null;
+            }
+            paused = false; // Ensure not paused when shop is open
+            settingsOpen = false; // Ensure settings are closed
+
             shopOpen = true;
             messageDisplay.style.display = 'none';
+            messageDisplay.classList.remove('overlay-message');
+            settingsDisplay.style.display = 'none'; // Ensure settings are hidden
             shopDisplay.style.display = 'block';
             renderShopItems();
+
+            // Hide game UI elements when shop is open
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden');
+            console.log("openShop finished. gameRunning:", gameRunning, "shopOpen:", shopOpen);
         }
 
         function closeShop() {
             shopOpen = false;
             shopDisplay.style.display = 'none';
-            if (!gameRunning) {
+            console.log("closeShop called. wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
+
+            if (wasGameRunningBeforeShop) {
                 gameRunning = true;
+                // Show game UI elements
+                uiContainer.classList.remove('hidden');
+                scoreBoard.classList.remove('hidden');
+                waveBoard.classList.remove('hidden');
+                healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+                shopButton.classList.remove('hidden');
+                pauseButton.classList.remove('hidden');
+                settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
+                console.log("closeShop finished. Resuming game. gameRunning:", gameRunning);
+            } else {
+                startTitleAnimation();
+                messageText.textContent = "That Shooting Game";
+                messageDisplay.style.display = 'flex'; // Display as panel
+                startButton.classList.remove('hidden');
+                restartButton.classList.add('hidden');
+                settingsButtonTitle.classList.remove('hidden'); // Show title settings button
+                messageDisplay.classList.remove('overlay-message');
+
+                // Set flag to prevent immediate clicks
+                isTransitioningFromMenu = true;
+                setTimeout(() => {
+                    isTransitioningFromMenu = false;
+                    console.log("isTransitioningFromMenu reset to false (from closeShop).");
+                }, 200); // Short delay
+
+                console.log("closeShop finished. Returning to title. gameRunning:", gameRunning);
+            }
+        }
+
+        function openSettings() {
+            console.log("openSettings called. gameRunning before:", gameRunning);
+            // Store the current gameRunning state before pausing for settings
+            wasGameRunningBeforeSettings = gameRunning;
+
+            if (gameRunning) {
+                gameRunning = false; // Temporarily set to false to pause the game loop
+                cancelAnimationFrame(animationFrameId); // Pause game loop
+            }
+            // Stop title animation if it's running and settings is opened from title
+            if (titleAnimationId) {
+                cancelAnimationFrame(titleAnimationId);
+                titleAnimationId = null;
+            }
+            paused = false; // Ensure not paused when settings are open
+            shopOpen = false; // Ensure shop is closed
+
+            settingsOpen = true; // Set settingsOpen flag to true
+            messageDisplay.style.display = 'none'; // Hide game over/title message
+            shopDisplay.style.display = 'none'; // Ensure shop is hidden
+            settingsDisplay.style.display = 'block'; // Show settings display
+
+            // Update toggle state to match current soundEnabled
+            soundToggle.checked = soundEnabled;
+            starsToggle.checked = starsEnabled; // Set stars toggle state
+
+            // Hide game UI elements when settings are open
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden');
+            startButton.classList.add('hidden'); // Hide start button
+            restartButton.classList.add('hidden'); // Hide restart button
+            settingsButtonTitle.classList.add('hidden'); // Hide title settings button
+            console.log("openSettings finished. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings, "gameRunning:", gameRunning);
+        }
+
+        function closeSettings() {
+            settingsOpen = false; // Set settingsOpen flag to false
+            settingsDisplay.style.display = 'none';
+            console.log("closeSettings called. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings);
+
+            // Use the stored state to decide whether to resume game or title animation
+            if (wasGameRunningBeforeSettings) {
+                gameRunning = true; // Restore gameRunning state
+                // Show game UI elements
+                uiContainer.classList.remove('hidden');
+                scoreBoard.classList.remove('hidden');
+                waveBoard.classList.remove('hidden');
+                healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+                shopButton.classList.remove('hidden');
+                pauseButton.classList.remove('hidden');
+                settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
+                animationFrameId = requestAnimationFrame(gameLoopWithInput); // Resume the game loop
+                console.log("closeSettings finished. Resuming game. gameRunning:", gameRunning);
+            } else {
+                // If game was not running (came from title screen), start title animation
+                startTitleAnimation();
+                // Show only start button and game title
+                messageText.textContent = "That Shooting Game";
+                messageDisplay.style.display = 'flex'; // Display as panel
+                startButton.classList.remove('hidden');
+                restartButton.classList.add('hidden');
+                settingsButtonTitle.classList.remove('hidden'); // Show title settings button
+                
+                // Set flag to prevent immediate clicks
+                isTransitioningFromMenu = true;
+                setTimeout(() => {
+                    isTransitioningFromMenu = false;
+                    console.log("isTransitioningFromMenu reset to false (from closeSettings).");
+                }, 200); // Short delay to prevent ghost clicks
+
+                console.log("closeSettings finished. Returning to title screen. gameRunning:", gameRunning);
             }
         }
 
@@ -1136,7 +1789,11 @@
                 buyButton.className = 'ml-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors';
                 buyButton.onclick = () => buyItem(item.id);
 
-                if (score < itemCost || (item.maxLevel && item.currentLevel >= item.maxLevel)) {
+                if (item.id === 'healthPack' && playerHealth >= playerMaxHealth) {
+                    buyButton.disabled = true;
+                    buyButton.classList.remove('hover:bg-green-600');
+                    buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
+                } else if (score < itemCost || (item.maxLevel && item.currentLevel >= item.maxLevel)) {
                     buyButton.disabled = true;
                     buyButton.classList.remove('hover:bg-green-600');
                     buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
@@ -1165,51 +1822,23 @@
             }
         }
 
-        async function getGameTip() {
-            messageText.textContent = "Generating tip...";
-            loadingSpinner.style.display = 'block';
-            getTipButton.disabled = true;
-
-            const prompt = "Provide a concise and encouraging tip for a 2D space shooter game. Focus on dodging enemies, strategic shooting, and utilizing shop upgrades (like faster bullets or player speed). Keep it under 50 words.";
-            let chatHistory = [];
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-            const payload = { contents: chatHistory };
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const tip = result.candidates[0].content.parts[0].text;
-                    messageText.textContent = tip;
-                } else {
-                    messageText.textContent = "Failed to get tip. Try again!";
-                    console.error("Gemini API response structure unexpected:", result);
-                }
-            } catch (error) {
-                messageText.textContent = "Error getting tip. Check console.";
-                console.error("Error calling Gemini API:", error);
-            } finally {
-                loadingSpinner.style.display = 'none';
-                getTipButton.disabled = false;
-            }
-        }
-
         const keyState = {};
 
         window.addEventListener('keydown', (e) => {
             keyState [e.key.toLowerCase()] = true;
             if (e.key === ' ' || e.key === 'spacebar') {
                 e.preventDefault();
-                if (gameRunning) shoot();
+                if (gameRunning && !paused && !shopOpen && !settingsOpen) shoot(); // Use settingsOpen flag
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                // If shop or settings are open, close them first
+                if (shopOpen) {
+                    closeShop();
+                } else if (settingsOpen) { // Use settingsOpen flag
+                    closeSettings();
+                } else {
+                    togglePause();
+                }
             }
         });
 
@@ -1217,34 +1846,31 @@
             keyState [e.key.toLowerCase()] = false;
         });
 
-        // Add click listener for shooting on the entire window
         window.addEventListener('click', (e) => {
-            if (gameRunning) {
+            if (gameRunning && !paused && !shopOpen && !settingsOpen) { // Use settingsOpen flag
                 shoot();
             }
         });
 
         let touchLeftActive = false;
         let touchRightActive = false;
+        let touchUpActive = false;
+        let touchDownActive = false;
 
-        // Event listener for mouse movement on the entire window
-        window.addEventListener('mousemove', (e) => {
+        canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            // Adjust mouse coordinates to be relative to the canvas
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
-            mouse.active = true; // Indicate that mouse input is being used
+            mouse.isOverCanvas = true;
         });
 
-        // Event listener for touch movement on the canvas
-        canvas.addEventListener('touchmove', (e) => {
-            // If touch is detected, assume mouse is not active for aiming purposes
-            mouse.active = false;
+        canvas.addEventListener('mouseleave', () => {
+            mouse.isOverCanvas = false;
         });
-
 
         function handleMovementInput() {
             player.dx = 0;
+            player.dy = 0;
 
             if (keyState['arrowleft'] || keyState['a'] || touchLeftActive) {
                 player.dx = -player.speed;
@@ -1252,118 +1878,121 @@
             if (keyState['arrowright'] || keyState['d'] || touchRightActive) {
                 player.dx = player.speed;
             }
+            if (keyState['arrowup'] || keyState['w'] || touchUpActive) {
+                player.dy = -player.speed;
+            }
+            if (keyState['arrowdown'] || keyState['s'] || touchDownActive) {
+                player.dy = player.speed;
+            }
         }
 
-        // Function to update player's rotation
         function updatePlayerRotation() {
-            if (mouse.active) {
-                // Calculate target angle based on mouse position relative to player center
-                const playerCenterX = player.x + player.width / 2;
-                const playerCenterY = player.y + player.height / 2;
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+
+            if (mouse.isOverCanvas) {
                 player.targetAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
             } else {
-                // Default to straight up if mouse is not active (e.g., on touch devices or no mouse movement)
                 player.targetAngle = -Math.PI / 2;
             }
 
-            // Smoothly interpolate current angle towards target angle
-            let angleDiff = player.targetAngle - player.currentAngle;
+            // Directly set currentAngle to targetAngle for instant rotation
+            player.currentAngle = player.targetAngle;
 
-            // Handle angle wrapping (e.g., from 170 to -170 degrees)
-            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-
-            player.currentAngle += angleDiff * player.rotationSpeed;
+            player.currentAngle = (player.currentAngle + Math.PI * 2) % (2 * Math.PI);
+            if (player.currentAngle > Math.PI) player.currentAngle -= 2 * Math.PI;
         }
 
-        // Function to update aim indicator position
         function updateAimIndicator() {
             const playerCenterX = player.x + player.width / 2;
             const playerCenterY = player.y + player.height / 2;
 
-            let targetAimX = mouse.x;
-            let targetAimY = mouse.y;
+            let mouseTargetX = mouse.x;
+            let mouseTargetY = mouse.y;
 
-            if (!mouse.active) {
-                // If mouse is not active (e.g., touch device), default aim straight up
-                targetAimX = playerCenterX;
-                targetAimY = playerCenterY - MAX_AIM_DISTANCE; // Aim straight up at max distance
+            // If mouse is not over canvas, aim straight up
+            if (!mouse.isOverCanvas) {
+                mouseTargetX = playerCenterX;
+                mouseTargetY = playerCenterY - MAX_AIM_DISTANCE; // Aim straight up
             }
 
-            // 1. Calculate the vector from player to target aim
-            let deltaX = targetAimX - playerCenterX;
-            let deltaY = targetAimY - playerCenterY;
+            // Calculate raw angle from player to mouse
+            let rawAngleToMouse = Math.atan2(mouseTargetY - playerCenterY, mouseTargetX - playerCenterX);
 
-            // 2. Calculate the distance
-            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            // Calculate difference between raw angle and player's current angle
+            let angleDiffFromPlayer = rawAngleToMouse - player.currentAngle;
 
-            // 3. Clamp the distance
-            if (distance > MAX_AIM_DISTANCE) {
-                deltaX = (deltaX / distance) * MAX_AIM_DISTANCE;
-                deltaY = (deltaY / distance) * MAX_AIM_DISTANCE;
-                distance = MAX_AIM_DISTANCE; // Update distance after clamping
-            }
+            // Normalize angleDiffFromPlayer to be within -PI to PI
+            if (angleDiffFromPlayer > Math.PI) angleDiffFromPlayer -= 2 * Math.PI;
+            if (angleDiffFromPlayer < -Math.PI) angleDiffFromPlayer += 2 * Math.PI;
 
-            // 4. Calculate the angle of the desired aim
-            let desiredAimAngle = Math.atan2(deltaY, deltaX);
+            // Clamp this difference to MAX_AIM_ANGLE_RADIANS
+            let clampedAngleDiff = Math.max(-MAX_AIM_ANGLE_RADIANS, Math.min(MAX_AIM_ANGLE_RADIANS, angleDiffFromPlayer));
 
-            // 5. Clamp the angle relative to player's current facing angle
-            // Normalize player.currentAngle to be between -PI and PI
-            let normalizedPlayerAngle = player.currentAngle;
-            if (normalizedPlayerAngle > Math.PI) normalizedPlayerAngle -= 2 * Math.PI;
-            if (normalizedPlayerAngle < -Math.PI) normalizedPlayerAngle += 2 * Math.PI;
+            // Add the clamped difference to player.currentAngle to get the actual aim angle for the indicator
+            let actualAimAngle = player.currentAngle + clampedAngleDiff;
 
-            // Calculate angle difference
-            let angleDiff = desiredAimAngle - normalizedPlayerAngle;
+            // Calculate the distance from the player to the mouse
+            let distanceToMouse = Math.sqrt( (mouseTargetX - playerCenterX)**2 + (mouseTargetY - playerCenterY)**2 );
 
-            // Handle angle wrapping for difference
-            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            // Clamp this distance to MAX_AIM_DISTANCE
+            let finalDistance = Math.min(distanceToMouse, MAX_AIM_DISTANCE);
 
-            // Clamp the angle difference
-            if (angleDiff > MAX_AIM_ANGLE_RADIANS) {
-                angleDiff = MAX_AIM_ANGLE_RADIANS;
-            } else if (angleDiff < -MAX_AIM_ANGLE_RADIANS) {
-                angleDiff = -MAX_AIM_ANGLE_RADIANS;
-            }
-
-            // Calculate the final clamped angle
-            let clampedAimAngle = normalizedPlayerAngle + angleDiff;
-
-            // 6. Recalculate deltaX and deltaY based on clamped angle and distance
-            aimIndicator.x = playerCenterX + distance * Math.cos(clampedAimAngle);
-            aimIndicator.y = playerCenterY + distance * Math.sin(clampedAimAngle);
+            // Use actualAimAngle and finalDistance to set aimIndicator.x and aimIndicator.y
+            aimIndicator.x = playerCenterX + finalDistance * Math.cos(actualAimAngle);
+            aimIndicator.y = playerCenterY + finalDistance * Math.sin(actualAimAngle);
         }
 
-
         function gameLoopWithInput() {
-            if (!gameRunning || shopOpen) return;
+            if (!gameRunning || shopOpen || paused || settingsOpen) { // Use settingsOpen flag
+                console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen);
+                return;
+            }
+
+            console.log("gameLoop: Running. Canvas dimensions: gameWidth=", gameWidth, "gameHeight=", gameHeight);
+
+            // Clear canvas background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+            console.log("gameLoop: Background cleared.");
 
             handleMovementInput();
             updatePlayerRotation();
-            updateAimIndicator(); // Update aim indicator position
-
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
+            updateAimIndicator();
 
             updateStars();
             drawStars();
+            console.log("Stars updated and drawn.");
 
             updatePlayer();
             drawPlayer();
-            aimIndicator.draw(); // Draw the aim indicator
+            console.log("Player updated and drawn at:", player.x, player.y);
+            aimIndicator.draw();
 
             if (bossActive) {
                 updateBoss();
                 boss.draw();
+                console.log("Boss updated and drawn.");
             } else {
                 spawnEnemy();
                 updateEnemies();
-                enemies.forEach(drawEnemy);
+                enemies.forEach(enemy => drawGenericEnemy(enemy));
+                if (enemies.length > 0) {
+                    console.log("Enemies updated and drawn. First enemy at:", enemies[0].x, enemies[0].y);
+                }
             }
 
             updateBullets();
             bullets.forEach(drawBullet);
+            if (bullets.length > 0) {
+                console.log("Bullets updated and drawn. First bullet at:", bullets[0].x, bullets[0].y);
+            }
+
+            updateEnemyBullets();
+            enemyBullets.forEach(bullet => enemyBulletProps.draw(bullet));
+            if (enemyBullets.length > 0) {
+                console.log("Enemy bullets updated and drawn. First enemy bullet at:", enemyBullets[0].x, enemyBullets[0].y);
+            }
 
             checkCollisions();
 
@@ -1375,7 +2004,44 @@
                 }
             }
 
+            // Request next frame
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
+        }
+
+        function updateTitleScreenPlayer() {
+            player.titleAnimationOffset += player.titleAnimationDirection * player.titleAnimationSpeed;
+            if (player.titleAnimationOffset > player.titleAnimationMaxOffset || player.titleAnimationOffset < -player.titleAnimationMaxOffset) {
+                player.titleAnimationDirection *= -1;
+            }
+            player.y = player.initialY + player.titleAnimationOffset;
+        }
+
+        function titleScreenAnimationLoop() {
+            if (gameRunning || shopOpen || settingsOpen) { // Use settingsOpen flag
+                cancelAnimationFrame(titleAnimationId);
+                titleAnimationId = null;
+                return;
+            }
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+
+            updateStars();
+            drawStars();
+
+            updateTitleScreenPlayer();
+            drawPlayer();
+
+            titleAnimationId = requestAnimationFrame(titleScreenAnimationLoop);
+        }
+
+        function startTitleAnimation() {
+            if (!titleAnimationId) {
+                player.y = player.initialY;
+                player.titleAnimationOffset = 0;
+                player.titleAnimationDirection = 1;
+                titleAnimationId = requestAnimationFrame(titleScreenAnimationLoop);
+            }
         }
 
         touchLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchLeftActive = true; });
@@ -1388,23 +2054,46 @@
 
         touchShootBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning) {
-                // For touch shooting, the aim indicator will already be straight up if mouse is not active
+            if (gameRunning && !paused && !shopOpen && !settingsOpen) { // Use settingsOpen flag
                 shoot();
             }
         });
+
+        const touchUpBtn = document.createElement('button');
+        touchUpBtn.id = 'touchUpBtn';
+        touchUpBtn.textContent = '▲';
+        touchUpBtn.classList.add('touch-control-vertical', 'px-4', 'py-2', 'bg-blue-500', 'text-white', 'rounded-full', 'font-semibold', 'hover:bg-blue-600', 'transition-colors');
+        document.querySelector('.touch-controls').insertBefore(touchUpBtn, touchShootBtn);
+
+        const touchDownBtn = document.createElement('button');
+        touchDownBtn.id = 'touchDownBtn';
+        touchDownBtn.textContent = '▼';
+        touchDownBtn.classList.add('touch-control-vertical', 'px-4', 'py-2', 'bg-blue-500', 'text-white', 'rounded-full', 'font-semibold', 'hover:bg-blue-600', 'transition-colors');
+        document.querySelector('.touch-controls').insertBefore(touchDownBtn, touchShootBtn.nextSibling);
+
+        touchUpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchUpActive = true; });
+        touchUpBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchUpActive = false; });
+        touchUpBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchUpActive = false; });
+
+        touchDownBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchDownActive = true; });
+        touchDownBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchDownActive = false; });
+        touchDownBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchDownActive = false; });
 
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', startGame);
         shopButton.addEventListener('click', openShop);
         closeShopBtn.addEventListener('click', closeShop);
-        getTipButton.addEventListener('click', getGameTip);
+        pauseButton.addEventListener('click', togglePause);
+        settingsButtonTitle.addEventListener('click', openSettings); // Event listener for title settings button
+        settingsButtonInGame.addEventListener('click', openSettings); // Event listener for in-game settings button
+        closeSettingsBtn.addEventListener('click', closeSettings); // Event listener for close settings button
+        soundToggle.addEventListener('change', toggleSound); // Event listener for sound toggle
+        starsToggle.addEventListener('change', toggleStars); // Event listener for stars toggle
 
         window.addEventListener('resize', () => {
             resizeCanvas();
-            if (!gameRunning && !shopOpen) {
-                messageText.textContent = `Game Over! Final Score: ${score}`;
-                messageDisplay.style.display = 'block';
+            if (!gameRunning && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+                startTitleAnimation();
             }
             if (shopOpen) {
                 renderShopItems();
@@ -1412,16 +2101,96 @@
         });
 
         window.onload = () => {
+            console.log("Window loaded. Initializing game.");
+            Tone.start().then(() => {
+                console.log("Audio context started successfully!");
+            }).catch(e => {
+                console.error("Error starting audio context:", e);
+            });
+
             resizeCanvas();
             updateScoreDisplay();
-            updateLivesDisplay();
+            updateHealthDisplay(); // Initial update for the new HTML health bar
             initializeStars();
 
             messageText.textContent = "That Shooting Game";
-            messageDisplay.style.display = 'block';
+            messageDisplay.style.display = 'flex';
             startButton.classList.remove('hidden');
             restartButton.classList.add('hidden');
-            getTipButton.classList.remove('hidden');
+            settingsButtonTitle.classList.remove('hidden'); // Show settings button on initial load
+
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden'); // Hide the new health bar initially
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button initially
+
+            // Initialize toggle states
+            soundToggle.checked = soundEnabled;
+            Tone.Master.mute = !soundEnabled;
+            starsToggle.checked = starsEnabled;
+
+            startTitleAnimation();
+            console.log("Window onload finished. gameRunning:", gameRunning);
+        };
+
+        // --- Console Commands for Playtesting ---
+        /**
+         * Advances the game to the next wave.
+         * Can be called from the browser's developer console for playtesting.
+         */
+        window.advanceWave = function() {
+            if (!gameRunning) {
+                console.warn("Game is not running. Start the game before advancing waves.");
+                return;
+            }
+
+            if (bossActive) {
+                defeatBoss();
+                console.log(`Boss defeated! Advancing to Wave ${wave}.`);
+            } else {
+                enemiesDefeatedInWave = enemiesRequiredForWave;
+                if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
+                    wave++;
+                    enemiesDefeatedInWave = 0;
+                    enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
+                    console.log(`Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
+                    updateScoreDisplay();
+                    showOverlayMessage(`Wave ${wave} Incoming!`);
+
+                    if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
+                        enemies.length = 0;
+                        startBossFight();
+                    }
+                }
+                console.log(`Advanced to Wave ${wave}.`);
+            }
+            enemies.length = 0;
+            enemyBullets.length = 0;
+        };
+
+        /**
+         * Gives the player a specified amount of score.
+         * @param {number} amount - The amount of score to add.
+         */
+        window.addScore = function(amount) {
+            if (typeof amount !== 'number' || amount <= 0) {
+                console.warn("Please provide a positive number for the score amount.");
+                return;
+            }
+            score += amount;
+            updateScoreDisplay();
+            console.log(`Added ${amount} score. Current score: ${score}`);
+        };
+
+        /**
+         * Restores player health to maximum.
+         */
+        window.fullHeal = function() {
+            playerHealth = playerMaxHealth;
+            updateHealthDisplay();
+            console.log("Player health fully restored!");
         };
     </script>
 </body>
