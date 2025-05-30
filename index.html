@@ -725,7 +725,8 @@
             gameContainer.style.height = `${newHeight + uiHeight}px`; // Add UI height back
 
             player.x = gameWidth / 2 - player.width / 2;
-            player.y = gameHeight - player.height - 20;
+            // Adjusted player Y position to ensure it's fully visible
+            player.y = gameHeight - player.height - 10; // Changed from -20 to -10
 
             messageDisplay.style.fontSize = `${Math.max(16, canvas.width / 25)}px`;
             shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`;
