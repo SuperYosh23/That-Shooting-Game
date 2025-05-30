@@ -452,6 +452,68 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
+        /* How To Play menu styles */
+        #howToPlayDisplay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(30, 41, 59, 0.98);
+            color: #e2e8f0;
+            padding: 2.5rem 3rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 1.3rem;
+            z-index: 20; /* Higher z-index than shop */
+            display: none;
+            width: 85%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid #4a5568;
+        }
+
+        #howToPlayDisplay h2 {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #a0aec0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #howToPlayDisplay p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        #howToPlayDisplay button {
+            margin-top: 2rem;
+            padding: 0.75rem 2.25rem;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #4299e1, #63b3ed);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            width: 100%;
+        }
+
+        #howToPlayDisplay button:hover {
+            background: linear-gradient(to right, #3182ce, #4299e1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+        #howToPlayDisplay button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+
         /* Credits and GitHub Icon styles */
         #credits {
             position: absolute;
@@ -507,12 +569,14 @@
         <p id="messageText"></p>
         <button id="startButton" class="hidden">Start Game</button>
         <button id="restartButton" class="hidden">Restart Game</button>
-        <button id="settingsButtonTitle" class="hidden">Settings</button> </div>
+        <button id="howToPlayButtonTitle" class="hidden">How To Play</button>
+        <button id="settingsButtonTitle" class="hidden">Settings</button>
+    </div>
 
     <div id="shopDisplay" class="hidden">
         <h2>Shop</h2>
         <div id="shopItemsContainer">
-            </div>
+        </div>
         <p class="mt-4 text-lg">Your Score: <span id="shopScore" class="font-bold text-yellow-300">0</span></p>
         <button id="closeShopBtn">Close Shop</button>
     </div>
@@ -536,6 +600,17 @@
         <button id="closeSettingsBtn">Close Settings</button>
     </div>
 
+    <div id="howToPlayDisplay" class="hidden">
+        <h2>How To Play</h2>
+        <p><strong>Objective:</strong> Survive endless waves of alien enemies and defeat powerful bosses!</p>
+        <p><strong>Movement:</strong> Use <strong>WASD</strong> or <strong>Arrow Keys</strong> to move your ship.</p>
+        <p><strong>Aim & Shoot:</strong> Move your <strong>Mouse</strong> to aim, and <strong>Click</strong> or press <strong>Spacebar</strong> to shoot.</p>
+        <p><strong>Shop:</strong> Spend points earned from defeating enemies to upgrade your ship. The shop opens between waves and after boss fights.</p>
+        <p><strong>Health:</strong> Keep an eye on your health bar! Pick up health packs from the shop to restore health.</p>
+        <p><strong>Pause:</strong> Press <strong>ESC</strong> to pause the game at any time.</p>
+        <button id="closeHowToPlayBtn">Back to Title</button>
+    </div>
+
     <div class="touch-controls">
         <button id="touchLeftBtn">◀</button>
         <button id="touchShootBtn">💥</button>
@@ -553,6 +628,7 @@
         const restartButton = document.getElementById('restartButton');
         const settingsButtonTitle = document.getElementById('settingsButtonTitle'); // New settings button for title screen
         const settingsButtonInGame = document.getElementById('settingsButtonInGame'); // New settings button for in-game UI
+        const howToPlayButtonTitle = document.getElementById('howToPlayButtonTitle'); // New How To Play button
 
         const shopDisplay = document.getElementById('shopDisplay');
         const shopItemsContainer = document.getElementById('shopItemsContainer');
@@ -565,6 +641,9 @@
         const soundToggle = document.getElementById('soundToggle'); // New sound toggle switch
         const starsToggle = document.getElementById('starsToggle'); // New stars toggle switch
         const closeSettingsBtn = document.getElementById('closeSettingsBtn'); // New close settings button
+
+        const howToPlayDisplay = document.getElementById('howToPlayDisplay'); // New How To Play display
+        const closeHowToPlayBtn = document.getElementById('closeHowToPlayBtn'); // New close How To Play button
 
         const touchLeftBtn = document.getElementById('touchLeftBtn');
         const touchRightBtn = document.getElementById('touchRightBtn');
@@ -582,16 +661,18 @@
         let wave = 1;
         let enemiesRequiredForWave = 15;
         let enemiesDefeatedInWave = 0;
-        var wavesPerBoss = 5; 
+        var wavesPerBoss = 5;
         let gameRunning = false;
         let shopOpen = false;
         let bossActive = false;
         let paused = false;
         let wasGameRunningBeforeShop = false;
         let wasGameRunningBeforeSettings = false; // New: to remember state before opening settings
+        let wasGameRunningBeforeHowToPlay = false; // New: to remember state before opening how to play
         let soundEnabled = true; // New: sound state
         let starsEnabled = true; // New: stars state
         let settingsOpen = false; // New: Flag to track if settings menu is open
+        let howToPlayOpen = false; // New: Flag to track if how to play menu is open
         let isTransitioningFromMenu = false; // Flag to prevent ghost clicks
 
         let animationFrameId;
@@ -620,7 +701,7 @@
             color: '#4299e1',
             currentAngle: -Math.PI / 2,
             targetAngle: -Math.PI / 2,
-            rotationSpeed: 1.0, 
+            rotationSpeed: 1.0,
             dx: 0,
             dy: 0,
             initialY: 0,
@@ -1001,6 +1082,7 @@
             messageDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 50)}px`;
             shopDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
             settingsDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
+            howToPlayDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`; // Adjust for new menu
 
             initializeStars();
         }
@@ -1431,23 +1513,30 @@
             gameRunning = false;
             bossActive = false;
             paused = false;
+            shopOpen = false;
+            settingsOpen = false;
+            howToPlayOpen = false; // Ensure howToPlay is closed
             cancelAnimationFrame(animationFrameId);
-            
+
             messageText.textContent = `Game Over! Final Score: ${score}`;
             messageDisplay.style.display = 'flex';
             startButton.classList.add('hidden');
             restartButton.classList.remove('hidden');
+            howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
             settingsButtonTitle.classList.remove('hidden'); // Show settings button on game over screen
 
             messageDisplay.classList.remove('overlay-message');
-            
+
             uiContainer.classList.add('hidden');
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
             healthBarDisplay.classList.add('hidden'); // Hide the new health bar
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
-            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button
+            settingsButtonInGame.classList.add('hidden');
+            shopDisplay.style.display = 'none'; // Ensure shop is hidden
+            settingsDisplay.style.display = 'none'; // Ensure settings are hidden
+            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
 
             startTitleAnimation();
         }
@@ -1458,6 +1547,7 @@
             messageDisplay.classList.add('overlay-message');
             startButton.classList.add('hidden');
             restartButton.classList.add('hidden');
+            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
             settingsButtonTitle.classList.add('hidden'); // Hide settings button for simple messages
 
             setTimeout(() => {
@@ -1517,10 +1607,11 @@
             bossActive = false;
             paused = false;
             settingsOpen = false; // Ensure settings are closed when game starts
+            howToPlayOpen = false; // Ensure howToPlay is closed when game starts
             bullets.length = 0;
             enemies.length = 0;
             enemyBullets.length = 0;
-            
+
             bossFightsCompleted = 0;
             enemyProps.spawnInterval = baseSpawnInterval;
             enemyProps.lastSpawnTime = Date.now();
@@ -1547,11 +1638,13 @@
 
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
-            
+
             startButton.classList.add('hidden');
             restartButton.classList.add('hidden');
+            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
             settingsButtonTitle.classList.add('hidden'); // Hide title settings button
             settingsDisplay.style.display = 'none'; // Explicitly hide settings display on game start
+            howToPlayDisplay.style.display = 'none'; // Explicitly hide how to play display on game start
 
             // Show game UI elements
             uiContainer.classList.remove('hidden');
@@ -1570,7 +1663,7 @@
         };
 
         function pauseGame() {
-            if (!gameRunning || paused || shopOpen || settingsOpen) return; // Use settingsOpen flag
+            if (!gameRunning || paused || shopOpen || settingsOpen || howToPlayOpen) return; // Use settingsOpen and howToPlayOpen flag
             paused = true;
             cancelAnimationFrame(animationFrameId);
             showOverlayMessage("Game Paused");
@@ -1583,11 +1676,11 @@
             healthBarDisplay.classList.add('hidden'); // Hide the new health bar
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
-            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button
+            settingsButtonInGame.classList.add('hidden');
         }
 
         function resumeGame() {
-            if (!gameRunning || !paused || shopOpen || settingsOpen) return; // Use settingsOpen flag
+            if (!gameRunning || !paused || shopOpen || settingsOpen || howToPlayOpen) return; // Use settingsOpen and howToPlayOpen flag
             paused = false;
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
@@ -1605,7 +1698,7 @@
         }
 
         function togglePause() {
-            if (gameRunning && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+            if (gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use settingsOpen and howToPlayOpen flag
                 if (paused) {
                     resumeGame();
                 } else {
@@ -1628,11 +1721,13 @@
             }
             paused = false; // Ensure not paused when shop is open
             settingsOpen = false; // Ensure settings are closed
+            howToPlayOpen = false; // Ensure howToPlay is closed
 
             shopOpen = true;
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
             settingsDisplay.style.display = 'none'; // Ensure settings are hidden
+            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
             shopDisplay.style.display = 'block';
             renderShopItems();
 
@@ -1670,6 +1765,7 @@
                 messageDisplay.style.display = 'flex'; // Display as panel
                 startButton.classList.remove('hidden');
                 restartButton.classList.add('hidden');
+                howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
                 settingsButtonTitle.classList.remove('hidden'); // Show title settings button
                 messageDisplay.classList.remove('overlay-message');
 
@@ -1700,10 +1796,12 @@
             }
             paused = false; // Ensure not paused when settings are open
             shopOpen = false; // Ensure shop is closed
+            howToPlayOpen = false; // Ensure howToPlay is closed
 
             settingsOpen = true; // Set settingsOpen flag to true
             messageDisplay.style.display = 'none'; // Hide game over/title message
             shopDisplay.style.display = 'none'; // Ensure shop is hidden
+            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
             settingsDisplay.style.display = 'block'; // Show settings display
 
             // Update toggle state to match current soundEnabled
@@ -1720,6 +1818,7 @@
             settingsButtonInGame.classList.add('hidden');
             startButton.classList.add('hidden'); // Hide start button
             restartButton.classList.add('hidden'); // Hide restart button
+            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
             settingsButtonTitle.classList.add('hidden'); // Hide title settings button
             console.log("openSettings finished. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings, "gameRunning:", gameRunning);
         }
@@ -1750,8 +1849,9 @@
                 messageDisplay.style.display = 'flex'; // Display as panel
                 startButton.classList.remove('hidden');
                 restartButton.classList.add('hidden');
+                howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
                 settingsButtonTitle.classList.remove('hidden'); // Show title settings button
-                
+
                 // Set flag to prevent immediate clicks
                 isTransitioningFromMenu = true;
                 setTimeout(() => {
@@ -1760,6 +1860,77 @@
                 }, 200); // Short delay to prevent ghost clicks
 
                 console.log("closeSettings finished. Returning to title screen. gameRunning:", gameRunning);
+            }
+        }
+
+        function openHowToPlay() {
+            console.log("openHowToPlay called. gameRunning before:", gameRunning);
+            wasGameRunningBeforeHowToPlay = gameRunning;
+
+            if (gameRunning) {
+                gameRunning = false;
+                cancelAnimationFrame(animationFrameId);
+            }
+            if (titleAnimationId) {
+                cancelAnimationFrame(titleAnimationId);
+                titleAnimationId = null;
+            }
+            paused = false;
+            shopOpen = false;
+            settingsOpen = false;
+
+            howToPlayOpen = true;
+            messageDisplay.style.display = 'none';
+            shopDisplay.style.display = 'none';
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'block';
+
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden');
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden');
+            startButton.classList.add('hidden');
+            restartButton.classList.add('hidden');
+            howToPlayButtonTitle.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden');
+            console.log("openHowToPlay finished. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay, "gameRunning:", gameRunning);
+        }
+
+        function closeHowToPlay() {
+            howToPlayOpen = false;
+            howToPlayDisplay.style.display = 'none';
+            console.log("closeHowToPlay called. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay);
+
+            if (wasGameRunningBeforeHowToPlay) {
+                gameRunning = true;
+                uiContainer.classList.remove('hidden');
+                scoreBoard.classList.remove('hidden');
+                waveBoard.classList.remove('hidden');
+                healthBarDisplay.classList.remove('hidden');
+                shopButton.classList.remove('hidden');
+                pauseButton.classList.remove('hidden');
+                settingsButtonInGame.classList.remove('hidden');
+                animationFrameId = requestAnimationFrame(gameLoopWithInput);
+                console.log("closeHowToPlay finished. Resuming game. gameRunning:", gameRunning);
+            } else {
+                startTitleAnimation();
+                messageText.textContent = "That Shooting Game";
+                messageDisplay.style.display = 'flex';
+                startButton.classList.remove('hidden');
+                restartButton.classList.add('hidden');
+                howToPlayButtonTitle.classList.remove('hidden');
+                settingsButtonTitle.classList.remove('hidden');
+
+                isTransitioningFromMenu = true;
+                setTimeout(() => {
+                    isTransitioningFromMenu = false;
+                    console.log("isTransitioningFromMenu reset to false (from closeHowToPlay).");
+                }, 200);
+
+                console.log("closeHowToPlay finished. Returning to title screen. gameRunning:", gameRunning);
             }
         }
 
@@ -1828,15 +1999,18 @@
             keyState [e.key.toLowerCase()] = true;
             if (e.key === ' ' || e.key === 'spacebar') {
                 e.preventDefault();
-                if (gameRunning && !paused && !shopOpen && !settingsOpen) shoot(); // Use settingsOpen flag
+                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) shoot(); // Use all menu flags
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                // If shop or settings are open, close them first
+                // If any menu is open, close it first
                 if (shopOpen) {
                     closeShop();
-                } else if (settingsOpen) { // Use settingsOpen flag
+                } else if (settingsOpen) {
                     closeSettings();
-                } else {
+                } else if (howToPlayOpen) {
+                    closeHowToPlay();
+                }
+                else {
                     togglePause();
                 }
             }
@@ -1847,7 +2021,7 @@
         });
 
         window.addEventListener('click', (e) => {
-            if (gameRunning && !paused && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
                 shoot();
             }
         });
@@ -1944,8 +2118,8 @@
         }
 
         function gameLoopWithInput() {
-            if (!gameRunning || shopOpen || paused || settingsOpen) { // Use settingsOpen flag
-                console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen);
+            if (!gameRunning || shopOpen || paused || settingsOpen || howToPlayOpen) { // Use all menu flags
+                console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
                 return;
             }
 
@@ -2017,7 +2191,7 @@
         }
 
         function titleScreenAnimationLoop() {
-            if (gameRunning || shopOpen || settingsOpen) { // Use settingsOpen flag
+            if (gameRunning || shopOpen || settingsOpen || howToPlayOpen) { // Use all menu flags
                 cancelAnimationFrame(titleAnimationId);
                 titleAnimationId = null;
                 return;
@@ -2054,7 +2228,7 @@
 
         touchShootBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning && !paused && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
                 shoot();
             }
         });
@@ -2089,10 +2263,12 @@
         closeSettingsBtn.addEventListener('click', closeSettings); // Event listener for close settings button
         soundToggle.addEventListener('change', toggleSound); // Event listener for sound toggle
         starsToggle.addEventListener('change', toggleStars); // Event listener for stars toggle
+        howToPlayButtonTitle.addEventListener('click', openHowToPlay); // Event listener for how to play button
+        closeHowToPlayBtn.addEventListener('click', closeHowToPlay); // Event listener for close how to play button
 
         window.addEventListener('resize', () => {
             resizeCanvas();
-            if (!gameRunning && !shopOpen && !settingsOpen) { // Use settingsOpen flag
+            if (!gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
                 startTitleAnimation();
             }
             if (shopOpen) {
@@ -2117,6 +2293,7 @@
             messageDisplay.style.display = 'flex';
             startButton.classList.remove('hidden');
             restartButton.classList.add('hidden');
+            howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button on initial load
             settingsButtonTitle.classList.remove('hidden'); // Show settings button on initial load
 
             scoreBoard.classList.add('hidden');
@@ -2125,6 +2302,9 @@
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
             settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button initially
+            shopDisplay.style.display = 'none'; // Ensure hidden
+            settingsDisplay.style.display = 'none'; // Ensure hidden
+            howToPlayDisplay.style.display = 'none'; // Ensure hidden
 
             // Initialize toggle states
             soundToggle.checked = soundEnabled;
