@@ -400,6 +400,10 @@
             active: false // True if mouse has moved on canvas, false otherwise (e.g., touch device)
         };
 
+        // Constants for aim restriction
+        let MAX_AIM_DISTANCE = 250; // Max distance from player center (now mutable)
+        const MAX_AIM_ANGLE_RADIANS = Math.PI / 6; // 30 degrees (Math.PI / 6)
+
         const player = {
             x: 0,
             y: 0,
@@ -613,9 +617,6 @@
             }
         };
 
-        // Constants for aim restriction
-        const MAX_AIM_DISTANCE = 250; // Max distance from player center
-        const MAX_AIM_ANGLE_RADIANS = Math.PI / 6; // 30 degrees (Math.PI / 6)
 
         const shopItems = {
             'bulletSpeed': {
@@ -652,6 +653,21 @@
                 effect: () => { player.speed += 1; },
                 description: 'Increases player movement speed by 1.',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.75)); },
+                getDisplayName: function() {
+                    return this.currentLevel < this.maxLevel ?
+                        `${this.name} (Lv.${this.currentLevel + 1})` :
+                        `${this.name} (Max Lv.)`;
+                }
+            },
+            'bulletRange': { // New shop item for bullet range
+                id: 'bulletRange',
+                name: 'Extended Range',
+                baseCost: 120,
+                currentLevel: 0,
+                maxLevel: 3,
+                effect: () => { MAX_AIM_DISTANCE += 50; }, // Increase MAX_AIM_DISTANCE
+                description: 'Increases bullet travel distance.',
+                getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.6)); },
                 getDisplayName: function() {
                     return this.currentLevel < this.maxLevel ?
                         `${this.name} (Lv.${this.currentLevel + 1})` :
@@ -726,7 +742,7 @@
 
             player.x = gameWidth / 2 - player.width / 2;
             // Adjusted player Y position to ensure it's fully visible
-            player.y = gameHeight - player.height - 50; // Changed from -30 to -50 for more clearance
+            player.y = gameHeight - player.height - 50; // Keep at -50 for good visibility
 
             messageDisplay.style.fontSize = `${Math.max(16, canvas.width / 25)}px`;
             shopDisplay.style.fontSize = `${Math.max(16, canvas.width / 30)}px`;
@@ -1051,6 +1067,8 @@
             player.currentAngle = -Math.PI / 2; // Reset player angle to straight up
             player.targetAngle = -Math.PI / 2;
 
+            // Reset MAX_AIM_DISTANCE when starting a new game
+            MAX_AIM_DISTANCE = 250; 
             for (const key in shopItems) {
                 shopItems [key].currentLevel = 0;
             }
