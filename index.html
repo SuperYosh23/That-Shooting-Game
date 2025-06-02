@@ -597,6 +597,13 @@
                 <span class="slider round"></span>
             </label>
         </div>
+        <div class="setting-item">
+            <label for="hitboxToggle">Show Hitboxes</label>
+            <label class="switch">
+                <input type="checkbox" id="hitboxToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
         <button id="closeSettingsBtn">Close Settings</button>
     </div>
 
@@ -640,6 +647,7 @@
         const settingsDisplay = document.getElementById('settingsDisplay'); // New settings display
         const soundToggle = document.getElementById('soundToggle'); // New sound toggle switch
         const starsToggle = document.getElementById('starsToggle'); // New stars toggle switch
+        const hitboxToggle = document.getElementById('hitboxToggle'); // NEW: hitbox toggle switch
         const closeSettingsBtn = document.getElementById('closeSettingsBtn'); // New close settings button
 
         const howToPlayDisplay = document.getElementById('howToPlayDisplay'); // New How To Play display
@@ -671,6 +679,7 @@
         let wasGameRunningBeforeHowToPlay = false; // New: to remember state before opening how to play
         let soundEnabled = true; // New: sound state
         let starsEnabled = true; // New: stars state
+        let showHitboxes = false; // NEW: hitbox display state
         let settingsOpen = false; // New: Flag to track if settings menu is open
         let howToPlayOpen = false; // New: Flag to track if how to play menu is open
         let isTransitioningFromMenu = false; // Flag to prevent ghost clicks
@@ -683,6 +692,8 @@
         const speedIncreasePerBoss = 1.0;
         const baseSpawnInterval = 1500;
         const spawnIntervalDecreasePerWave = 75;
+        const basePlayerSpeed = 7; // Define base player speed
+        const playerSpeedIncreasePerBoss = 0.5; // Amount player speed increases after each boss
 
         const mouse = {
             x: 0,
@@ -696,8 +707,10 @@
         const player = {
             x: 0,
             y: 0,
-            width: 50,
-            height: 50,
+            width: 50, // Visual width
+            height: 50, // Visual height
+            hitboxWidth: 40, // NEW: Smaller hitbox width
+            hitboxHeight: 45, // NEW: Smaller hitbox height
             color: '#4299e1',
             currentAngle: -Math.PI / 2,
             targetAngle: -Math.PI / 2,
@@ -757,7 +770,7 @@
 
                 ctx.restore();
             },
-            speed: 7,
+            speed: basePlayerSpeed, // Initialize with base player speed
         };
 
         const bullets = [];
@@ -900,6 +913,8 @@
 
         const stars = [];
         const numStars = 150;
+        const baseStarSpeed = 0.5; // Base speed for stars
+        const starSpeedMultiplier = 0.1; // How much player speed affects star speed
 
         const flashEffect = {
             active: false,
@@ -953,21 +968,7 @@
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.25)); },
                 getDisplayName: function() { return this.name; }
             },
-            'playerSpeed': {
-                id: 'playerSpeed',
-                name: 'Player Speed',
-                baseCost: 150,
-                currentLevel: 0,
-                maxLevel: 2,
-                effect: () => { player.speed += 1; },
-                description: 'Increases player movement speed by 1.',
-                getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.75)); },
-                getDisplayName: function() {
-                    return this.currentLevel < this.maxLevel ?
-                        `${this.name} (Lv.${this.currentLevel + 1})` :
-                        `${this.name} (Max Lv.)`;
-                }
-            },
+            // Removed 'playerSpeed' upgrade from the shop
             'bulletRange': {
                 id: 'bulletRange',
                 name: 'Extended Range',
@@ -1031,6 +1032,12 @@
             console.log("Stars Enabled:", starsEnabled);
         }
 
+        // NEW: Function to toggle hitbox visibility
+        function toggleHitboxes() {
+            showHitboxes = hitboxToggle.checked;
+            console.log("Show Hitboxes:", showHitboxes);
+        }
+
         function initializeStars() {
             stars.length = 0;
             for (let i = 0; i < numStars; i++) {
@@ -1039,7 +1046,8 @@
                     y: Math.random() * gameHeight,
                     radius: Math.random() * 2,
                     alpha: Math.random() * 0.7 + 0.3,
-                    speed: Math.random() * 0.5 + 0.5
+                    // Initial speed is now based on baseStarSpeed
+                    initialSpeed: Math.random() * 0.5 + 0.5
                 });
             }
         }
@@ -1058,8 +1066,10 @@
 
         function updateStars() {
             if (!starsEnabled) return; // Only update stars if enabled
+            // Stars scroll faster based on player speed
+            const currentStarSpeed = baseStarSpeed + (player.speed * starSpeedMultiplier);
             stars.forEach(star => {
-                star.y += star.speed;
+                star.y += star.initialSpeed * currentStarSpeed; // Use initialSpeed as a multiplier for variation
                 if (star.y > gameHeight) {
                     star.y = 0;
                     star.x = Math.random() * gameWidth;
@@ -1072,7 +1082,7 @@
             canvas.height = window.innerHeight;
             gameWidth = canvas.width;
             gameHeight = canvas.height;
-            console.log(`resizeCanvas: Canvas resized to Width: ${gameWidth}, Height: ${gameHeight}`);
+            console.log(`[Resize] Canvas resized to Width: ${gameWidth}, Height: ${gameHeight}`);
 
 
             player.x = gameWidth / 2 - player.width / 2;
@@ -1094,66 +1104,86 @@
             // No longer calling drawPlayerHealthBar() here
         }
 
+        // NEW: Function to draw player hitbox for debugging
+        function drawPlayerHitbox() {
+            if (!showHitboxes) return;
+            ctx.strokeStyle = 'lime'; // Bright color for visibility
+            ctx.lineWidth = 2;
+            // Calculate hitbox coordinates relative to player's top-left (x, y)
+            const playerHitboxX = player.x + (player.width - player.hitboxWidth) / 2;
+            const playerHitboxY = player.y + (player.height - player.hitboxHeight) / 2;
+            ctx.strokeRect(playerHitboxX, playerHitboxY, player.hitboxWidth, player.hitboxHeight);
+        }
+
         function drawBullet(bullet) {
             bulletProps.draw(bullet);
         }
 
         function drawGenericEnemy(enemy) {
-            const type = enemy.type;
-            const color = type.colors[0];
-            ctx.fillStyle = color;
+            try {
+                const type = enemy.type;
+                if (!type) {
+                    console.error("[Draw Enemy] Enemy type is undefined:", enemy);
+                    return;
+                }
+                const color = type.colors[0];
+                ctx.fillStyle = color;
 
-            ctx.beginPath();
-            ctx.moveTo(enemy.x + type.width / 2, enemy.y);
-            ctx.lineTo(enemy.x, enemy.y + type.height * 0.3);
-            ctx.lineTo(enemy.x, enemy.y + type.height * 0.7);
-            ctx.lineTo(enemy.x + type.width / 2, enemy.y + type.height);
-            ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.7);
-            ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.3);
-            ctx.closePath();
-            ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(enemy.x + type.width / 2, enemy.y);
+                ctx.lineTo(enemy.x, enemy.y + type.height * 0.3);
+                ctx.lineTo(enemy.x, enemy.y + type.height * 0.7);
+                ctx.lineTo(enemy.x + type.width / 2, enemy.y + type.height);
+                ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.7);
+                ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.3);
+                ctx.closePath();
+                ctx.fill();
 
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            const eyeCenterX = enemy.x + type.width / 2;
-            const eyeCenterY = enemy.y + type.height / 2;
-            const eyeRadius = 8 * (type.width / 40);
-
-            const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
-            glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
-            glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
-            ctx.fillStyle = glowGradient;
-            ctx.beginPath();
-            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#f7fafc';
-            ctx.beginPath();
-            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#2d3748';
-            ctx.beginPath();
-            ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (type.health > 10) {
-                const healthBarWidth = type.width * 0.8;
-                const healthBarHeight = 5;
-                const healthBarX = enemy.x + (type.width - healthBarWidth) / 2;
-                const healthBarY = enemy.y - 10;
-
-                ctx.fillStyle = '#c53030';
-                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-                const currentHealthWidth = (enemy.health / type.health) * healthBarWidth;
-                ctx.fillStyle = '#48bb78';
-                ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
-
-                ctx.strokeStyle = '#e2e8f0';
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
                 ctx.lineWidth = 1;
-                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                ctx.stroke();
+
+                const eyeCenterX = enemy.x + type.width / 2;
+                const eyeCenterY = enemy.y + type.height / 2;
+                const eyeRadius = 8 * (type.width / 40);
+
+                const glowGradient = ctx.createRadialGradient(eyeCenterX, eyeCenterY, 0, eyeCenterX, eyeCenterY, eyeRadius + 5);
+                glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
+                glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#f7fafc';
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#2d3748';
+                ctx.beginPath();
+                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (type.health > 10) { // Only draw health bar for enemies with more than 10 base health (medium and large)
+                    const healthBarWidth = type.width * 0.8;
+                    const healthBarHeight = 5;
+                    const healthBarX = enemy.x + (type.width - healthBarWidth) / 2;
+                    const healthBarY = enemy.y - 10;
+
+                    ctx.fillStyle = '#c53030';
+                    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+                    const currentHealthWidth = (enemy.health / type.health) * healthBarWidth;
+                    ctx.fillStyle = '#48bb78';
+                    ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                }
+                console.log(`[Draw Enemy] Drawing ${type.name} enemy at (${enemy.x}, ${enemy.y})`);
+            } catch (error) {
+                console.error("[Draw Enemy] Error drawing enemy:", enemy, error);
             }
         }
 
@@ -1180,6 +1210,7 @@
                 });
                 enemy.lastShotTime = currentTime;
                 playEnemyShootSound();
+                console.log(`[Enemy Shoot] ${enemy.type.name} enemy shot bullet.`);
             }
         }
 
@@ -1206,6 +1237,7 @@
                 });
                 boss.lastShotTime = currentTime;
                 playEnemyShootSound();
+                console.log("[Boss Shoot] Boss shot bullet.");
             }
         }
 
@@ -1257,7 +1289,9 @@
         function spawnEnemy() {
             const currentTime = Date.now();
             if (bossActive) {
-                const selectedEnemyType = enemyTypes[0];
+                // During boss fight, only small enemies might spawn as support, or no enemies at all.
+                // Current logic spawns small enemies during boss fight.
+                const selectedEnemyType = enemyTypes[0]; // Assuming enemyTypes[0] is 'small'
                 const x = Math.random() * (gameWidth - selectedEnemyType.width);
                 const y = -selectedEnemyType.height;
                 enemies.push({
@@ -1268,6 +1302,7 @@
                     lastShotTime: currentTime
                 });
                 enemyProps.lastSpawnTime = currentTime;
+                console.log(`[Spawn Enemy] Spawning ${selectedEnemyType.name} during boss fight.`);
                 return;
             }
 
@@ -1278,8 +1313,9 @@
                 } else if (wave <= 3) {
                     currentWeights = { 'small': enemySpawnWeights.small, 'medium': enemySpawnWeights.medium };
                 } else {
-                    currentWeights = enemySpawnWeights;
+                    currentWeights = enemySpawnWeights; // All enemy types are eligible
                 }
+                console.log(`[Spawn Enemy] Current wave: ${wave}. Eligible enemy types based on weights:`, currentWeights);
 
                 let weightedEnemyTypes = [];
                 for (const typeName in currentWeights) {
@@ -1292,7 +1328,13 @@
                     }
                 }
 
+                if (weightedEnemyTypes.length === 0) {
+                    console.warn("[Spawn Enemy] No eligible enemy types to spawn based on current weights.");
+                    return;
+                }
+
                 const selectedEnemyType = weightedEnemyTypes[Math.floor(Math.random() * weightedEnemyTypes.length)];
+                console.log(`[Spawn Enemy] Selected enemy type: ${selectedEnemyType.name}`);
 
                 const x = Math.random() * (gameWidth - selectedEnemyType.width);
                 const y = -selectedEnemyType.height;
@@ -1305,12 +1347,18 @@
                     lastShotTime: currentTime
                 });
                 enemyProps.lastSpawnTime = currentTime;
+                console.log(`[Spawn Enemy] Added ${selectedEnemyType.name} enemy. Total enemies: ${enemies.length}`);
             }
         }
 
         function updateEnemies() {
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
+                if (!enemy || !enemy.type) {
+                    console.error("[Update Enemies] Invalid enemy object encountered, skipping:", enemy);
+                    enemies.splice(i, 1); // Remove invalid enemy to prevent further errors
+                    continue;
+                }
                 enemy.y += enemy.type.baseSpeed + (bossFightsCompleted * speedIncreasePerBoss);
 
                 if (enemy.type.canShoot) {
@@ -1318,6 +1366,7 @@
                 }
 
                 if (enemy.y + enemy.type.height > gameHeight) {
+                    console.log(`[Update Enemies] ${enemy.type.name} enemy left screen, removing.`);
                     enemies.splice(i, 1);
                 }
             }
@@ -1330,6 +1379,7 @@
 
             if (boss.x < 0 || boss.x + boss.width > gameWidth) {
                 boss.dx *= -1;
+                console.log("[Update Boss] Boss hit horizontal boundary, reversing direction.");
             }
 
             if (boss.y < gameHeight * 0.2) {
@@ -1340,6 +1390,11 @@
         }
 
         function checkCollisions() {
+            // Calculate player's actual hitbox coordinates
+            const playerHitboxX = player.x + (player.width - player.hitboxWidth) / 2;
+            const playerHitboxY = player.y + (player.height - player.hitboxHeight) / 2;
+
+            // Player bullets vs. Enemies
             for (let i = bullets.length - 1; i >= 0; i--) {
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     const bullet = bullets [i];
@@ -1352,31 +1407,36 @@
                     ) {
                         bullets.splice(i, 1);
                         enemy.health -= 10;
+                        console.log(`[Collision] Player bullet hit ${enemy.type.name} enemy. New health: ${enemy.health}`);
                         if (enemy.health <= 0) {
                             enemies.splice(j, 1);
                             score += enemy.type.scoreValue;
                             enemiesDefeatedInWave++;
                             updateScoreDisplay();
+                            console.log(`[Collision] ${enemy.type.name} enemy defeated. Score: ${score}, Enemies defeated this wave: ${enemiesDefeatedInWave}`);
+
 
                             if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
                                 wave++;
                                 enemiesDefeatedInWave = 0;
                                 enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
-                                console.log(`Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
+                                console.log(`[Wave Progression] Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
                                 updateScoreDisplay();
                                 showOverlayMessage(`Wave ${wave} Incoming!`);
 
                                 if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
-                                    enemies.length = 0;
+                                    console.log(`[Wave Progression] Time for a boss fight! Current wave: ${wave}`);
+                                    enemies.length = 0; // Clear remaining enemies
                                     startBossFight();
                                 }
                             }
                         }
-                        break;
+                        break; // Break inner loop after bullet hits one enemy
                     }
                 }
             }
 
+            // Player bullets vs. Boss
             if (bossActive) {
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const bullet = bullets[i];
@@ -1389,6 +1449,7 @@
                         bullets.splice(i, 1);
                         boss.health -= 1;
                         updateBossHealthDisplay();
+                        console.log(`[Collision] Player bullet hit Boss. New health: ${boss.health}`);
                         if (boss.health <= 0) {
                             defeatBoss();
                         }
@@ -1397,43 +1458,49 @@
                 }
             }
 
+            // Player vs. Enemies (collision) - NOW USING PLAYER HITBOX
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies [i];
                 if (
-                    player.x < enemy.x + enemy.type.width &&
-                    player.x + player.width > enemy.x &&
-                    player.y < enemy.y + player.height &&
-                    player.y + player.height > enemy.y
+                    playerHitboxX < enemy.x + enemy.type.width &&
+                    playerHitboxX + player.hitboxWidth > enemy.x &&
+                    playerHitboxY < enemy.y + enemy.type.height &&
+                    playerHitboxY + player.hitboxHeight > enemy.y
                 ) {
+                    console.log(`[Collision] Player collided with ${enemy.type.name} enemy.`);
                     enemies.splice(i, 1);
                     takeDamage(5, 'enemy collision');
-                    break;
+                    break; // Break after player hits one enemy
                 }
             }
 
+            // Player vs. Enemy Bullets - NOW USING PLAYER HITBOX
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 const eBullet = enemyBullets[i];
                 if (
-                    eBullet.x < player.x + player.width &&
-                    eBullet.x + enemyBulletProps.width > player.x &&
-                    eBullet.y < player.y + player.height &&
-                    eBullet.y + enemyBulletProps.height > player.y
+                    eBullet.x < playerHitboxX + player.hitboxWidth &&
+                    eBullet.x + enemyBulletProps.width > playerHitboxX &&
+                    eBullet.y < playerHitboxY + player.hitboxHeight &&
+                    eBullet.y + enemyBulletProps.height > playerHitboxY
                 ) {
+                    console.log(`[Collision] Player hit by enemy bullet.`);
                     enemyBullets.splice(i, 1);
                     takeDamage(enemyBulletProps.damage, 'enemy bullet');
-                    break;
+                    break; // Break after player hits one enemy bullet
                 }
             }
 
+            // Player vs. Boss (collision) - NOW USING PLAYER HITBOX
             if (bossActive) {
                 if (
-                    player.x < boss.x + boss.width &&
-                    player.x + player.width > boss.x &&
-                    player.y < boss.y + boss.height &&
-                    player.y + player.height > boss.y
+                    playerHitboxX < boss.x + boss.width &&
+                    playerHitboxX + player.hitboxWidth > boss.x &&
+                    playerHitboxY < boss.y + boss.height &&
+                    playerHitboxY + player.hitboxHeight > boss.y
                 ) {
+                    console.log("[Collision] Player collided with Boss.");
                     takeDamage(50, 'boss collision');
-                    return;
+                    // No return here, allow other collisions to be checked if necessary, though boss collision is usually severe.
                 }
             }
         }
@@ -1468,6 +1535,7 @@
                 });
                 bulletProps.lastShotTime = currentTime;
                 playPlayerShootSound();
+                console.log("[Player Shoot] Bullet fired.");
             }
         }
 
@@ -1487,14 +1555,16 @@
             } else {
                 currentHealthBar.style.backgroundColor = '#e53e3e'; // Red
             }
+            console.log(`[Health Update] Player Health: ${playerHealth}/${playerMaxHealth}`);
         }
 
         function updateBossHealthDisplay() {
             // Health bar is drawn directly in boss.draw()
+            console.log(`[Boss Health] Boss Health: ${boss.health}/${boss.maxHealth}`);
         }
 
         function takeDamage(amount, reason = 'unknown cause') {
-            console.log(`Player took ${amount} damage due to: ${reason}`);
+            console.log(`[Damage] Player took ${amount} damage due to: ${reason}`);
             playerHealth -= amount;
             if (playerHealth < 0) {
                 playerHealth = 0;
@@ -1510,6 +1580,7 @@
         }
 
         function gameOver() {
+            console.log("[Game Over] Game Over initiated.");
             gameRunning = false;
             bossActive = false;
             paused = false;
@@ -1517,6 +1588,7 @@
             settingsOpen = false;
             howToPlayOpen = false; // Ensure howToPlay is closed
             cancelAnimationFrame(animationFrameId);
+            animationFrameId = null; // Clear the animation frame ID
 
             messageText.textContent = `Game Over! Final Score: ${score}`;
             messageDisplay.style.display = 'flex';
@@ -1542,6 +1614,7 @@
         }
 
         function showOverlayMessage(message) {
+            console.log(`[Overlay Message] Showing: "${message}"`);
             messageText.textContent = message;
             messageDisplay.style.display = 'block';
             messageDisplay.classList.add('overlay-message');
@@ -1553,13 +1626,15 @@
             setTimeout(() => {
                 messageDisplay.style.display = 'none';
                 messageDisplay.classList.remove('overlay-message');
+                console.log(`[Overlay Message] Hidden: "${message}"`);
             }, 2000);
         }
 
 
         function startBossFight() {
+            console.log("[Boss Fight] Starting boss fight!");
             bossActive = true;
-            enemies.length = 0;
+            enemies.length = 0; // Clear any remaining regular enemies
             boss.maxHealth = 100 + (Math.floor(wave / wavesPerBoss) - 1) * 100;
             boss.health = boss.maxHealth;
             boss.width = gameWidth * 0.6;
@@ -1574,20 +1649,24 @@
         }
 
         function defeatBoss() {
+            console.log("[Boss Fight] Boss defeated!");
             bossActive = false;
             score += 500;
             updateScoreDisplay();
             showOverlayMessage(`Boss Defeated! Wave ${wave + 1} Incoming!`);
 
             bossFightsCompleted++;
-            enemyProps.spawnInterval = baseSpawnInterval;
-            console.log(`Boss Defeated! New Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval Reset: ${enemyProps.spawnInterval}`);
+            player.speed += playerSpeedIncreasePerBoss; // Increase player speed after boss fight
+            console.log(`[Boss Fight] Player speed increased to: ${player.speed}`);
+
+            enemyProps.spawnInterval = baseSpawnInterval; // Reset spawn interval after boss
+            console.log(`[Boss Fight] Boss Fights Completed: ${bossFightsCompleted}. Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval Reset: ${enemyProps.spawnInterval}`);
 
             wave++;
             enemiesDefeatedInWave = 0;
-            enemiesRequiredForWave = 15;
-            enemies.length = 0;
-            enemyBullets.length = 0;
+            enemiesRequiredForWave = 15; // Reset enemies required for next wave
+            enemies.length = 0; // Clear any remaining enemies
+            enemyBullets.length = 0; // Clear any remaining enemy bullets
         }
 
         function startGame() {
@@ -1615,7 +1694,7 @@
             bossFightsCompleted = 0;
             enemyProps.spawnInterval = baseSpawnInterval;
             enemyProps.lastSpawnTime = Date.now();
-            console.log(`Game Started! Initial Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval: ${enemyProps.spawnInterval}`);
+            console.log(`[Game Start] Game Started! Initial Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval: ${enemyProps.spawnInterval}`);
 
             bulletProps.lastShotTime = 0;
             player.dx = 0;
@@ -1627,9 +1706,12 @@
 
             MAX_AIM_DISTANCE = 250;
             for (const key in shopItems) {
-                shopItems [key].currentLevel = 0;
+                // Reset levels for upgrades that are still in the shop
+                if (shopItems[key].currentLevel !== undefined) {
+                    shopItems[key].currentLevel = 0;
+                }
             }
-            player.speed = 7;
+            player.speed = basePlayerSpeed; // Reset player speed to base
             bulletProps.speed = 10;
 
             updateScoreDisplay();
@@ -1663,11 +1745,15 @@
         };
 
         function pauseGame() {
-            if (!gameRunning || paused || shopOpen || settingsOpen || howToPlayOpen) return; // Use settingsOpen and howToPlayOpen flag
+            if (!gameRunning || paused || shopOpen || settingsOpen || howToPlayOpen) {
+                console.log("[Pause] Cannot pause. Current state: gameRunning=", gameRunning, "paused=", paused, "shopOpen=", shopOpen, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
+                return; // Prevent pausing if game is not running or already paused/menu is open
+            }
             paused = true;
             cancelAnimationFrame(animationFrameId);
+            animationFrameId = null; // Clear the animation frame ID
             showOverlayMessage("Game Paused");
-            console.log("Game Paused. gameRunning:", gameRunning, "paused:", paused);
+            console.log("[Pause] Game Paused. gameRunning:", gameRunning, "paused:", paused);
 
             // Hide game UI elements during pause
             uiContainer.classList.add('hidden');
@@ -1680,11 +1766,14 @@
         }
 
         function resumeGame() {
-            if (!gameRunning || !paused || shopOpen || settingsOpen || howToPlayOpen) return; // Use settingsOpen and howToPlayOpen flag
+            if (!gameRunning || !paused || shopOpen || settingsOpen || howToPlayOpen) {
+                console.log("[Resume] Cannot resume. Current state: gameRunning=", gameRunning, "paused=", paused, "shopOpen=", shopOpen, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
+                return; // Prevent resuming if game is not running, not paused, or menu is open
+            }
             paused = false;
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
-            console.log("Game Resumed. gameRunning:", gameRunning, "paused:", paused);
+            console.log("[Resume] Game Resumed. gameRunning:", gameRunning, "paused:", paused);
 
             // Show game UI elements
             uiContainer.classList.remove('hidden');
@@ -1698,22 +1787,25 @@
         }
 
         function togglePause() {
-            if (gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use settingsOpen and howToPlayOpen flag
+            if (gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
                 if (paused) {
                     resumeGame();
                 } else {
                     pauseGame();
                 }
+            } else {
+                console.log("[Toggle Pause] Game not in a state to toggle pause. gameRunning:", gameRunning, "shopOpen:", shopOpen, "settingsOpen:", settingsOpen, "howToPlayOpen:", howToPlayOpen);
             }
         }
 
         function openShop() {
             wasGameRunningBeforeShop = gameRunning;
-            console.log("openShop called. gameRunning before:", gameRunning, "wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
+            console.log("[Shop] openShop called. gameRunning before:", gameRunning, "wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
 
             if (gameRunning) {
                 gameRunning = false;
                 cancelAnimationFrame(animationFrameId);
+                animationFrameId = null; // Clear the animation frame ID
             }
             if (titleAnimationId) {
                 cancelAnimationFrame(titleAnimationId);
@@ -1739,13 +1831,13 @@
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
             settingsButtonInGame.classList.add('hidden');
-            console.log("openShop finished. gameRunning:", gameRunning, "shopOpen:", shopOpen);
+            console.log("[Shop] openShop finished. gameRunning:", gameRunning, "shopOpen:", shopOpen);
         }
 
         function closeShop() {
             shopOpen = false;
             shopDisplay.style.display = 'none';
-            console.log("closeShop called. wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
+            console.log("[Shop] closeShop called. wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
 
             if (wasGameRunningBeforeShop) {
                 gameRunning = true;
@@ -1758,7 +1850,7 @@
                 pauseButton.classList.remove('hidden');
                 settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
-                console.log("closeShop finished. Resuming game. gameRunning:", gameRunning);
+                console.log("[Shop] closeShop finished. Resuming game. gameRunning:", gameRunning);
             } else {
                 startTitleAnimation();
                 messageText.textContent = "That Shooting Game";
@@ -1773,21 +1865,22 @@
                 isTransitioningFromMenu = true;
                 setTimeout(() => {
                     isTransitioningFromMenu = false;
-                    console.log("isTransitioningFromMenu reset to false (from closeShop).");
+                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeShop).");
                 }, 200); // Short delay
 
-                console.log("closeShop finished. Returning to title. gameRunning:", gameRunning);
+                console.log("[Shop] closeShop finished. Returning to title. gameRunning:", gameRunning);
             }
         }
 
         function openSettings() {
-            console.log("openSettings called. gameRunning before:", gameRunning);
+            console.log("[Settings] openSettings called. gameRunning before:", gameRunning);
             // Store the current gameRunning state before pausing for settings
             wasGameRunningBeforeSettings = gameRunning;
 
             if (gameRunning) {
                 gameRunning = false; // Temporarily set to false to pause the game loop
                 cancelAnimationFrame(animationFrameId); // Pause game loop
+                animationFrameId = null; // Clear the animation frame ID
             }
             // Stop title animation if it's running and settings is opened from title
             if (titleAnimationId) {
@@ -1807,6 +1900,7 @@
             // Update toggle state to match current soundEnabled
             soundToggle.checked = soundEnabled;
             starsToggle.checked = starsEnabled; // Set stars toggle state
+            hitboxToggle.checked = showHitboxes; // NEW: Set hitbox toggle state
 
             // Hide game UI elements when settings are open
             uiContainer.classList.add('hidden');
@@ -1820,13 +1914,13 @@
             restartButton.classList.add('hidden'); // Hide restart button
             howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
             settingsButtonTitle.classList.add('hidden'); // Hide title settings button
-            console.log("openSettings finished. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings, "gameRunning:", gameRunning);
+            console.log("[Settings] openSettings finished. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings, "gameRunning:", gameRunning);
         }
 
         function closeSettings() {
             settingsOpen = false; // Set settingsOpen flag to false
             settingsDisplay.style.display = 'none';
-            console.log("closeSettings called. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings);
+            console.log("[Settings] closeSettings called. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings);
 
             // Use the stored state to decide whether to resume game or title animation
             if (wasGameRunningBeforeSettings) {
@@ -1840,7 +1934,7 @@
                 pauseButton.classList.remove('hidden');
                 settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
                 animationFrameId = requestAnimationFrame(gameLoopWithInput); // Resume the game loop
-                console.log("closeSettings finished. Resuming game. gameRunning:", gameRunning);
+                console.log("[Settings] closeSettings finished. Resuming game. gameRunning:", gameRunning);
             } else {
                 // If game was not running (came from title screen), start title animation
                 startTitleAnimation();
@@ -1856,20 +1950,21 @@
                 isTransitioningFromMenu = true;
                 setTimeout(() => {
                     isTransitioningFromMenu = false;
-                    console.log("isTransitioningFromMenu reset to false (from closeSettings).");
+                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeSettings).");
                 }, 200); // Short delay to prevent ghost clicks
 
-                console.log("closeSettings finished. Returning to title screen. gameRunning:", gameRunning);
+                console.log("[Settings] closeSettings finished. Returning to title screen. gameRunning:", gameRunning);
             }
         }
 
         function openHowToPlay() {
-            console.log("openHowToPlay called. gameRunning before:", gameRunning);
+            console.log("[HowToPlay] openHowToPlay called. gameRunning before:", gameRunning);
             wasGameRunningBeforeHowToPlay = gameRunning;
 
             if (gameRunning) {
                 gameRunning = false;
                 cancelAnimationFrame(animationFrameId);
+                animationFrameId = null; // Clear the animation frame ID
             }
             if (titleAnimationId) {
                 cancelAnimationFrame(titleAnimationId);
@@ -1896,13 +1991,13 @@
             restartButton.classList.add('hidden');
             howToPlayButtonTitle.classList.add('hidden');
             settingsButtonTitle.classList.add('hidden');
-            console.log("openHowToPlay finished. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay, "gameRunning:", gameRunning);
+            console.log("[HowToPlay] openHowToPlay finished. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay, "gameRunning:", gameRunning);
         }
 
         function closeHowToPlay() {
             howToPlayOpen = false;
             howToPlayDisplay.style.display = 'none';
-            console.log("closeHowToPlay called. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay);
+            console.log("[HowToPlay] closeHowToPlay called. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay);
 
             if (wasGameRunningBeforeHowToPlay) {
                 gameRunning = true;
@@ -1914,7 +2009,7 @@
                 pauseButton.classList.remove('hidden');
                 settingsButtonInGame.classList.remove('hidden');
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
-                console.log("closeHowToPlay finished. Resuming game. gameRunning:", gameRunning);
+                console.log("[HowToPlay] closeHowToPlay finished. Resuming game. gameRunning:", gameRunning);
             } else {
                 startTitleAnimation();
                 messageText.textContent = "That Shooting Game";
@@ -1927,10 +2022,10 @@
                 isTransitioningFromMenu = true;
                 setTimeout(() => {
                     isTransitioningFromMenu = false;
-                    console.log("isTransitioningFromMenu reset to false (from closeHowToPlay).");
+                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeHowToPlay).");
                 }, 200);
 
-                console.log("closeHowToPlay finished. Returning to title screen. gameRunning:", gameRunning);
+                console.log("[HowToPlay] closeHowToPlay finished. Returning to title screen. gameRunning:", gameRunning);
             }
         }
 
@@ -1988,8 +2083,9 @@
                     item.currentLevel++;
                 }
                 renderShopItems();
+                console.log(`[Shop] Bought ${item.name}. New score: ${score}`);
             } else {
-                console.log("Not enough points!");
+                console.log(`[Shop] Not enough points to buy ${item.name}! Need ${itemCost}, have ${score}.`);
             }
         }
 
@@ -2012,6 +2108,21 @@
                 }
                 else {
                     togglePause();
+                }
+            } else if (e.key.toLowerCase() === 'g' && e.ctrlKey) { // Added Ctrl+g shortcut
+                e.preventDefault();
+                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) {
+                    window.advanceWave();
+                } else {
+                    console.warn("[Keyboard Shortcut] Cannot advance wave: game is not running or a menu is open/paused.");
+                }
+            } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) { // NEW: Ctrl+h shortcut for 9000 points
+                e.preventDefault();
+                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) {
+                    window.addScore(9000);
+                    showOverlayMessage("9000 Points Added!"); // Optional: show a message
+                } else {
+                    console.warn("[Keyboard Shortcut] Cannot add score: game is not running or a menu is open/paused.");
                 }
             }
         });
@@ -2118,17 +2229,22 @@
         }
 
         function gameLoopWithInput() {
-            if (!gameRunning || shopOpen || paused || settingsOpen || howToPlayOpen) { // Use all menu flags
-                console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
-                return;
+            if (!gameRunning || shopOpen || paused || settingsOpen || howToPlayOpen) {
+                // If the loop is not supposed to run, clear the animation frame ID
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                // console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
+                return; // Exit the loop if game is not running or a menu is open/paused
             }
 
-            console.log("gameLoop: Running. Canvas dimensions: gameWidth=", gameWidth, "gameHeight=", gameHeight);
+            // console.log("gameLoop: Running. Canvas dimensions: gameWidth=", gameWidth, "gameHeight=", gameHeight);
 
             // Clear canvas background
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, gameWidth, gameHeight);
-            console.log("gameLoop: Background cleared.");
+            // console.log("gameLoop: Background cleared.");
 
             handleMovementInput();
             updatePlayerRotation();
@@ -2136,37 +2252,39 @@
 
             updateStars();
             drawStars();
-            console.log("Stars updated and drawn.");
+            // console.log("Stars updated and drawn.");
 
             updatePlayer();
             drawPlayer();
-            console.log("Player updated and drawn at:", player.x, player.y);
+            // NEW: Draw player hitbox if enabled
+            drawPlayerHitbox();
+            // console.log("Player updated and drawn at:", player.x, player.y);
             aimIndicator.draw();
 
             if (bossActive) {
                 updateBoss();
                 boss.draw();
-                console.log("Boss updated and drawn.");
+                // console.log("Boss updated and drawn.");
             } else {
                 spawnEnemy();
                 updateEnemies();
                 enemies.forEach(enemy => drawGenericEnemy(enemy));
-                if (enemies.length > 0) {
-                    console.log("Enemies updated and drawn. First enemy at:", enemies[0].x, enemies[0].y);
-                }
+                // if (enemies.length > 0) {
+                //     console.log("Enemies updated and drawn. First enemy at:", enemies[0].x, enemies[0].y);
+                // }
             }
 
             updateBullets();
             bullets.forEach(drawBullet);
-            if (bullets.length > 0) {
-                console.log("Bullets updated and drawn. First bullet at:", bullets[0].x, bullets[0].y);
-            }
+            // if (bullets.length > 0) {
+            //     console.log("Bullets updated and drawn. First bullet at:", bullets[0].x, bullets[0].y);
+            // }
 
             updateEnemyBullets();
             enemyBullets.forEach(bullet => enemyBulletProps.draw(bullet));
-            if (enemyBullets.length > 0) {
-                console.log("Enemy bullets updated and drawn. First enemy bullet at:", enemyBullets[0].x, enemyBullets[0].y);
-            }
+            // if (enemyBullets.length > 0) {
+            //     console.log("Enemy bullets updated and drawn. First enemy bullet at:", enemyBullets[0].x, enemyBullets[0].y);
+            // }
 
             checkCollisions();
 
@@ -2215,6 +2333,7 @@
                 player.titleAnimationOffset = 0;
                 player.titleAnimationDirection = 1;
                 titleAnimationId = requestAnimationFrame(titleScreenAnimationLoop);
+                console.log("[Title Animation] Title animation started.");
             }
         }
 
@@ -2233,17 +2352,49 @@
             }
         });
 
+        // Create and append vertical touch buttons
         const touchUpBtn = document.createElement('button');
         touchUpBtn.id = 'touchUpBtn';
         touchUpBtn.textContent = '▲';
-        touchUpBtn.classList.add('touch-control-vertical', 'px-4', 'py-2', 'bg-blue-500', 'text-white', 'rounded-full', 'font-semibold', 'hover:bg-blue-600', 'transition-colors');
+        touchUpBtn.classList.add('touch-control-vertical'); // Use a generic class for styling
         document.querySelector('.touch-controls').insertBefore(touchUpBtn, touchShootBtn);
 
         const touchDownBtn = document.createElement('button');
         touchDownBtn.id = 'touchDownBtn';
         touchDownBtn.textContent = '▼';
-        touchDownBtn.classList.add('touch-control-vertical', 'px-4', 'py-2', 'bg-blue-500', 'text-white', 'rounded-full', 'font-semibold', 'hover:bg-blue-600', 'transition-colors');
+        touchDownBtn.classList.add('touch-control-vertical'); // Use a generic class for styling
         document.querySelector('.touch-controls').insertBefore(touchDownBtn, touchShootBtn.nextSibling);
+
+        // Add styling for vertical touch buttons (similar to existing touch buttons)
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = `
+            .touch-control-vertical {
+                background: linear-gradient(to bottom, #4a5568, #2d3748);
+                color: white;
+                border: 2px solid #a0aec0;
+                border-radius: 50%;
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                box-shadow: 0 6px 10px rgba(0,0,0,0.4);
+                transition: all 0.2s ease-in-out;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            }
+            .touch-control-vertical:active {
+                background: linear-gradient(to bottom, #2d3748, #1a202c);
+                transform: scale(0.9);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
 
         touchUpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchUpActive = true; });
         touchUpBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchUpActive = false; });
@@ -2263,6 +2414,7 @@
         closeSettingsBtn.addEventListener('click', closeSettings); // Event listener for close settings button
         soundToggle.addEventListener('change', toggleSound); // Event listener for sound toggle
         starsToggle.addEventListener('change', toggleStars); // Event listener for stars toggle
+        hitboxToggle.addEventListener('change', toggleHitboxes); // NEW: Event listener for hitbox toggle
         howToPlayButtonTitle.addEventListener('click', openHowToPlay); // Event listener for how to play button
         closeHowToPlayBtn.addEventListener('click', closeHowToPlay); // Event listener for close how to play button
 
@@ -2310,6 +2462,7 @@
             soundToggle.checked = soundEnabled;
             Tone.Master.mute = !soundEnabled;
             starsToggle.checked = starsEnabled;
+            hitboxToggle.checked = showHitboxes; // NEW: Initialize hitbox toggle state
 
             startTitleAnimation();
             console.log("Window onload finished. gameRunning:", gameRunning);
@@ -2328,26 +2481,28 @@
 
             if (bossActive) {
                 defeatBoss();
-                console.log(`Boss defeated! Advancing to Wave ${wave}.`);
+                console.log(`[Console Command] Boss defeated! Advancing to Wave ${wave}.`);
             } else {
-                enemiesDefeatedInWave = enemiesRequiredForWave;
+                enemiesDefeatedInWave = enemiesRequiredForWave; // Fulfill current wave
+                // Trigger wave progression logic
                 if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
                     wave++;
                     enemiesDefeatedInWave = 0;
                     enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
-                    console.log(`Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
+                    console.log(`[Console Command] Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
                     updateScoreDisplay();
                     showOverlayMessage(`Wave ${wave} Incoming!`);
 
                     if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
-                        enemies.length = 0;
+                        console.log(`[Console Command] Time for a boss fight (from advanceWave)! Current wave: ${wave}`);
+                        enemies.length = 0; // Clear remaining enemies
                         startBossFight();
                     }
                 }
-                console.log(`Advanced to Wave ${wave}.`);
+                console.log(`[Console Command] Advanced to Wave ${wave}.`);
             }
-            enemies.length = 0;
-            enemyBullets.length = 0;
+            enemies.length = 0; // Clear any remaining enemies
+            enemyBullets.length = 0; // Clear any remaining enemy bullets
         };
 
         /**
@@ -2361,7 +2516,7 @@
             }
             score += amount;
             updateScoreDisplay();
-            console.log(`Added ${amount} score. Current score: ${score}`);
+            console.log(`[Console Command] Added ${amount} score. Current score: ${score}`);
         };
 
         /**
@@ -2370,7 +2525,7 @@
         window.fullHeal = function() {
             playerHealth = playerMaxHealth;
             updateHealthDisplay();
-            console.log("Player health fully restored!");
+            console.log("[Console Command] Player health fully restored!");
         };
     </script>
 </body>
