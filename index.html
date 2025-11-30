@@ -170,27 +170,30 @@
             display: none; /* Hide buttons for simple overlay messages like "Game Paused" */
         }
 
-
+        /* Touch controls */
         .touch-controls {
-            display: none;
+            display: none; /* Controlled via JS toggle or media query */
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 90%;
-            max-width: 350px;
+            width: 92%;
+            max-width: 480px;
             z-index: 20;
             justify-content: space-between;
             align-items: center;
-            gap: 1.5rem;
+            gap: 1rem;
+        }
+        .touch-controls.active {
+            display: flex; /* Force show when enabled via settings */
         }
         .touch-controls button {
             background: linear-gradient(to bottom, #4a5568, #2d3748);
             color: white;
             border: 2px solid #a0aec0;
             border-radius: 50%;
-            width: 70px;
-            height: 70px;
+            width: 72px;
+            height: 72px;
             font-size: 28px;
             display: flex;
             align-items: center;
@@ -199,17 +202,17 @@
             -webkit-user-select: none;
             -ms-user-select: none;
             box-shadow: 0 6px 10px rgba(0,0,0,0.4);
-            transition: all 0.2s ease-in-out;
+            transition: transform 0.08s ease-out, opacity 0.08s ease-out;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            opacity: 0.95;
         }
         .touch-controls button:active {
-            background: linear-gradient(to bottom, #2d3748, #1a202c);
-            transform: scale(0.9);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transform: scale(0.92);
+            opacity: 0.85;
         }
         @media (hover: none) and (pointer: coarse) {
             .touch-controls {
-                display: flex;
+                display: flex; /* Auto-show on mobile */
             }
         }
 
@@ -371,61 +374,29 @@
             width: 60px;
             height: 34px;
         }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
+            transition: .25s;
             border-radius: 34px;
         }
-
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
+            height: 26px; width: 26px;
+            left: 4px; bottom: 4px;
             background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
+            transition: .25s;
             border-radius: 50%;
         }
-
-        input:checked + .slider {
-            background-color: #48bb78; /* Green when checked */
-        }
-
-        input:focus + .slider {
-            box-shadow: 0 0 1px #48bb78;
-        }
-
-        input:checked + .slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-        }
-
-        /* Rounded sliders */
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
+        input:checked + .slider { background-color: #48bb78; }
+        input:focus + .slider { box-shadow: 0 0 1px #48bb78; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
 
         #closeSettingsBtn {
             margin-top: 2.5rem;
@@ -441,16 +412,8 @@
             font-weight: 700;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
-
-        #closeSettingsBtn:hover {
-            background: linear-gradient(to right, #c53030, #9b2c2c);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
-        }
-        #closeSettingsBtn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+        #closeSettingsBtn:hover { background: linear-gradient(to right, #c53030, #9b2c2c); transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.3); }
+        #closeSettingsBtn:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         /* How To Play menu styles */
         #howToPlayDisplay {
@@ -502,17 +465,8 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
             width: 100%;
         }
-
-        #howToPlayDisplay button:hover {
-            background: linear-gradient(to right, #3182ce, #4299e1);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
-        }
-        #howToPlayDisplay button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
+        #howToPlayDisplay button:hover { background: linear-gradient(to right, #3182ce, #4299e1); transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.3); }
+        #howToPlayDisplay button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         /* Credits and GitHub Icon styles */
         #credits {
@@ -524,7 +478,6 @@
             z-index: 10;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-
         #githubLink {
             position: absolute;
             bottom: 10px;
@@ -534,10 +487,7 @@
             z-index: 10;
             transition: color 0.2s ease-in-out;
         }
-
-        #githubLink:hover {
-            color: #e2e8f0;
-        }
+        #githubLink:hover { color: #e2e8f0; }
     </style>
 </head>
 <body>
@@ -575,8 +525,7 @@
 
     <div id="shopDisplay" class="hidden">
         <h2>Shop</h2>
-        <div id="shopItemsContainer">
-        </div>
+        <div id="shopItemsContainer"></div>
         <p class="mt-4 text-lg">Your Score: <span id="shopScore" class="font-bold text-yellow-300">0</span></p>
         <button id="closeShopBtn">Close Shop</button>
     </div>
@@ -601,6 +550,14 @@
             <label for="hitboxToggle">Show Hitboxes</label>
             <label class="switch">
                 <input type="checkbox" id="hitboxToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <!-- NEW: Enable Touch Controls toggle for desktop testing -->
+        <div class="setting-item">
+            <label for="touchToggle">Enable Touch Controls</label>
+            <label class="switch">
+                <input type="checkbox" id="touchToggle">
                 <span class="slider round"></span>
             </label>
         </div>
@@ -633,9 +590,9 @@
         const messageText = document.getElementById('messageText');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
-        const settingsButtonTitle = document.getElementById('settingsButtonTitle'); // New settings button for title screen
-        const settingsButtonInGame = document.getElementById('settingsButtonInGame'); // New settings button for in-game UI
-        const howToPlayButtonTitle = document.getElementById('howToPlayButtonTitle'); // New How To Play button
+        const settingsButtonTitle = document.getElementById('settingsButtonTitle');
+        const settingsButtonInGame = document.getElementById('settingsButtonInGame');
+        const howToPlayButtonTitle = document.getElementById('howToPlayButtonTitle');
 
         const shopDisplay = document.getElementById('shopDisplay');
         const shopItemsContainer = document.getElementById('shopItemsContainer');
@@ -644,18 +601,20 @@
         const shopButton = document.getElementById('shopButton');
         const pauseButton = document.getElementById('pauseButton');
 
-        const settingsDisplay = document.getElementById('settingsDisplay'); // New settings display
-        const soundToggle = document.getElementById('soundToggle'); // New sound toggle switch
-        const starsToggle = document.getElementById('starsToggle'); // New stars toggle switch
-        const hitboxToggle = document.getElementById('hitboxToggle'); // NEW: hitbox toggle switch
-        const closeSettingsBtn = document.getElementById('closeSettingsBtn'); // New close settings button
+        const settingsDisplay = document.getElementById('settingsDisplay');
+        const soundToggle = document.getElementById('soundToggle');
+        const starsToggle = document.getElementById('starsToggle');
+        const hitboxToggle = document.getElementById('hitboxToggle');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 
-        const howToPlayDisplay = document.getElementById('howToPlayDisplay'); // New How To Play display
-        const closeHowToPlayBtn = document.getElementById('closeHowToPlayBtn'); // New close How To Play button
+        const howToPlayDisplay = document.getElementById('howToPlayDisplay');
+        const closeHowToPlayBtn = document.getElementById('closeHowToPlayBtn');
 
+        const touchControls = document.querySelector('.touch-controls');
         const touchLeftBtn = document.getElementById('touchLeftBtn');
         const touchRightBtn = document.getElementById('touchRightBtn');
         const touchShootBtn = document.getElementById('touchShootBtn');
+        const touchToggle = document.getElementById('touchToggle');
 
         // New references for the health bar elements
         const healthBarDisplay = document.getElementById('healthBarDisplay');
@@ -675,14 +634,15 @@
         let bossActive = false;
         let paused = false;
         let wasGameRunningBeforeShop = false;
-        let wasGameRunningBeforeSettings = false; // New: to remember state before opening settings
-        let wasGameRunningBeforeHowToPlay = false; // New: to remember state before opening how to play
-        let soundEnabled = true; // New: sound state
-        let starsEnabled = true; // New: stars state
-        let showHitboxes = false; // NEW: hitbox display state
-        let settingsOpen = false; // New: Flag to track if settings menu is open
-        let howToPlayOpen = false; // New: Flag to track if how to play menu is open
-        let isTransitioningFromMenu = false; // Flag to prevent ghost clicks
+        let wasGameRunningBeforeSettings = false;
+        let wasGameRunningBeforeHowToPlay = false;
+        let soundEnabled = true;
+        let starsEnabled = true;
+        let showHitboxes = false;
+        let settingsOpen = false;
+        let howToPlayOpen = false;
+        let isTransitioningFromMenu = false;
+        let touchControlsEnabled = false; // NEW: manual toggle for touch controls
 
         let animationFrameId;
         let titleAnimationId;
@@ -695,28 +655,20 @@
         const basePlayerSpeed = 7; // Define base player speed
         const playerSpeedIncreasePerBoss = 0.5; // Amount player speed increases after each boss
 
-        const mouse = {
-            x: 0,
-            y: 0,
-            isOverCanvas: false
-        };
+        const mouse = { x: 0, y: 0, isOverCanvas: false };
 
         let MAX_AIM_DISTANCE = 250;
         const MAX_AIM_ANGLE_RADIANS = Math.PI / 6;
 
         const player = {
-            x: 0,
-            y: 0,
-            width: 50, // Visual width
-            height: 50, // Visual height
-            hitboxWidth: 40, // NEW: Smaller hitbox width
-            hitboxHeight: 45, // NEW: Smaller hitbox height
+            x: 0, y: 0,
+            width: 50, height: 50,
+            hitboxWidth: 40, hitboxHeight: 45,
             color: '#4299e1',
             currentAngle: -Math.PI / 2,
             targetAngle: -Math.PI / 2,
             rotationSpeed: 1.0,
-            dx: 0,
-            dy: 0,
+            dx: 0, dy: 0,
             initialY: 0,
             titleAnimationOffset: 0,
             titleAnimationDirection: 1,
@@ -724,34 +676,20 @@
             titleAnimationMaxOffset: 10,
             draw: function() {
                 ctx.save();
-
                 ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
                 ctx.rotate(this.currentAngle + Math.PI / 2);
-
                 const bodyGradient = ctx.createLinearGradient(-this.width / 2, -this.height / 2, this.width / 2, this.height / 2);
-                bodyGradient.addColorStop(0, '#4299e1');
-                bodyGradient.addColorStop(0.5, '#63b3ed');
-                bodyGradient.addColorStop(1, '#4299e1');
+                bodyGradient.addColorStop(0, '#4299e1'); bodyGradient.addColorStop(0.5, '#63b3ed'); bodyGradient.addColorStop(1, '#4299e1');
                 ctx.fillStyle = bodyGradient;
-
                 ctx.beginPath();
                 ctx.moveTo(0, -this.height / 2);
                 ctx.lineTo(-this.width * 0.4, this.height * 0.2);
                 ctx.lineTo(-this.width * 0.3, this.height / 2);
                 ctx.lineTo(this.width * 0.3, this.height / 2);
                 ctx.lineTo(this.width * 0.4, this.height * 0.2);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.fillStyle = '#a78bfa';
-                ctx.beginPath();
-                ctx.arc(0, -this.height * 0.1, 8, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#f56565';
-                ctx.fillRect(-this.width * 0.2, this.height / 2 - 5, this.width * 0.15, 10);
-                ctx.fillRect(this.width * 0.05, this.height / 2 - 5, this.width * 0.15, 10);
-
+                ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#a78bfa'; ctx.beginPath(); ctx.arc(0, -this.height * 0.1, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#f56565'; ctx.fillRect(-this.width * 0.2, this.height / 2 - 5, this.width * 0.15, 10); ctx.fillRect(this.width * 0.05, this.height / 2 - 5, this.width * 0.15, 10);
                 if (gameRunning) {
                     const exhaustHeight = Math.random() * 10 + 5;
                     const exhaustGradient = ctx.createLinearGradient(0, this.height / 2, 0, this.height / 2 + exhaustHeight);
@@ -764,101 +702,50 @@
                     ctx.lineTo(-this.width * 0.3, this.height / 2 + exhaustHeight);
                     ctx.lineTo(this.width * 0.3, this.height / 2 + exhaustHeight);
                     ctx.lineTo(this.width * 0.2, this.height / 2);
-                    ctx.closePath();
-                    ctx.fill();
+                    ctx.closePath(); ctx.fill();
                 }
-
                 ctx.restore();
             },
-            speed: basePlayerSpeed, // Initialize with base player speed
+            speed: basePlayerSpeed,
         };
 
         const bullets = [];
         const bulletProps = {
-            width: 5,
-            height: 15,
-            color: '#f56565',
+            width: 5, height: 15, color: '#f56565',
             draw: function(bullet) {
                 ctx.save();
                 ctx.translate(bullet.x + this.width / 2, bullet.y + this.height / 2);
                 ctx.rotate(bullet.angle + Math.PI / 2);
-
                 ctx.fillStyle = this.color;
                 ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
                 ctx.fillStyle = '#ff7777';
                 ctx.fillRect(-this.width / 2 + 1, -this.height / 2 + 2, this.width - 2, this.height - 4);
-
                 ctx.fillStyle = 'rgba(255, 200, 0, 0.5)';
                 ctx.fillRect(-this.width / 2, this.height / 2, this.width, this.height * 0.5);
-
                 ctx.restore();
             },
-            speed: 10,
-            cooldown: 250,
-            lastShotTime: 0
+            speed: 10, cooldown: 250, lastShotTime: 0
         };
 
         const enemyTypes = [
-            {
-                name: 'small',
-                width: 40,
-                height: 30,
-                health: 10,
-                baseSpeed: baseEnemySpeed,
-                colors: ['#48bb78', '#38a169', '#68d391'],
-                canShoot: false,
-                scoreValue: 10
-            },
-            {
-                name: 'medium',
-                width: 60,
-                height: 45,
-                health: 20,
-                baseSpeed: baseEnemySpeed * 0.8,
-                colors: ['#f6ad55', '#ed8936', '#dd6b20'],
-                canShoot: true,
-                bulletSpeed: 5,
-                shootCooldown: 3000,
-                scoreValue: 30
-            },
-            {
-                name: 'large',
-                width: 80,
-                height: 60,
-                health: 30,
-                baseSpeed: baseEnemySpeed * 0.6,
-                colors: ['#e53e3e', '#c53030', '#9b2c2c'],
-                canShoot: true,
-                bulletSpeed: 7,
-                shootCooldown: 4000,
-                scoreValue: 60
-            }
+            { name: 'small', width: 40, height: 30, health: 10, baseSpeed: baseEnemySpeed, colors: ['#48bb78', '#38a169', '#68d391'], canShoot: false, scoreValue: 10 },
+            { name: 'medium', width: 60, height: 45, health: 20, baseSpeed: baseEnemySpeed * 0.8, colors: ['#f6ad55', '#ed8936', '#dd6b20'], canShoot: true, bulletSpeed: 5, shootCooldown: 3000, scoreValue: 30 },
+            { name: 'large', width: 80, height: 60, health: 30, baseSpeed: baseEnemySpeed * 0.6, colors: ['#e53e3e', '#c53030', '#9b2c2c'], canShoot: true, bulletSpeed: 7, shootCooldown: 4000, scoreValue: 60 }
         ];
 
         const enemies = [];
-        const enemyProps = {
-            spawnInterval: baseSpawnInterval,
-            lastSpawnTime: 0
-        };
+        const enemyProps = { spawnInterval: baseSpawnInterval, lastSpawnTime: 0 };
 
         const enemyBullets = [];
         const enemyBulletProps = {
-            width: 12,
-            height: 12,
-            color: '#FF0000',
+            width: 12, height: 12, color: '#FF0000',
             draw: function(bullet) {
                 ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, this.width / 2, 0, Math.PI * 2);
-                ctx.fill();
-
+                ctx.beginPath(); ctx.arc(bullet.x, bullet.y, this.width / 2, 0, Math.PI * 2); ctx.fill();
                 const gradient = ctx.createRadialGradient(bullet.x, bullet.y, 0, bullet.x, bullet.y, this.width / 2 + 5);
-                gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)'); gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
                 ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, this.width / 2 + 5, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(bullet.x, bullet.y, this.width / 2 + 5, 0, Math.PI * 2); ctx.fill();
             },
             damage: 10
         };
@@ -866,12 +753,8 @@
         const boss = {
             x: 0, y: 0, width: 0, height: 0,
             health: 0, maxHealth: 0,
-            speed: 1, dx: 1,
-            color: '#e53e3e',
-            bulletSpeed: 6,
-            shootCooldown: 1000,
-            lastShotTime: 0,
-
+            speed: 1, dx: 1, color: '#e53e3e',
+            bulletSpeed: 6, shootCooldown: 1000, lastShotTime: 0,
             draw: function() {
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
@@ -881,33 +764,18 @@
                 ctx.lineTo(this.x + this.width * 0.9, this.y + this.height);
                 ctx.lineTo(this.x + this.width * 0.1, this.y + this.height);
                 ctx.lineTo(this.x, this.y + this.height * 0.5);
-                ctx.closePath();
-                ctx.fill();
-
+                ctx.closePath(); ctx.fill();
                 ctx.fillStyle = '#a0aec0';
                 ctx.fillRect(this.x + this.width * 0.05, this.y + this.height * 0.3, 20, this.height * 0.4);
                 ctx.fillRect(this.x + this.width * 0.95 - 20, this.y + this.height * 0.3, 20, this.height * 0.4);
-
                 ctx.fillStyle = '#f6e05e';
-                ctx.beginPath();
-                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 30, 0, Math.PI * 2);
-                ctx.fill();
-
-                const healthBarWidth = this.width * 0.8;
-                const healthBarHeight = 15;
-                const healthBarX = this.x + (this.width - healthBarWidth) / 2;
-                const healthBarY = this.y - 25;
-
-                ctx.fillStyle = '#c53030';
-                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
+                ctx.beginPath(); ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 30, 0, Math.PI * 2); ctx.fill();
+                const healthBarWidth = this.width * 0.8, healthBarHeight = 15;
+                const healthBarX = this.x + (this.width - healthBarWidth) / 2, healthBarY = this.y - 25;
+                ctx.fillStyle = '#c53030'; ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
                 const currentHealthWidth = (this.health / this.maxHealth) * healthBarWidth;
-                ctx.fillStyle = '#48bb78';
-                ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
-
-                ctx.strokeStyle = '#e2e8f0';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                ctx.fillStyle = '#48bb78'; ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
             }
         };
 
@@ -916,72 +784,42 @@
         const baseStarSpeed = 0.5; // Base speed for stars
         const starSpeedMultiplier = 0.1; // How much player speed affects star speed
 
-        const flashEffect = {
-            active: false,
-            color: 'rgba(255, 0, 0, 0.3)',
-            duration: 200,
-            startTime: 0
-        };
+        const flashEffect = { active: false, color: 'rgba(255, 0, 0, 0.3)', duration: 200, startTime: 0 };
 
         const aimIndicator = {
-            x: 0,
-            y: 0,
-            radius: 8,
-            color: '#FFFF00',
+            x: 0, y: 0, radius: 8, color: '#FFFF00',
             draw: function() {
                 ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2); ctx.stroke();
             }
         };
 
         const shopItems = {
             'bulletSpeed': {
-                id: 'bulletSpeed',
-                name: 'Faster Bullets',
-                baseCost: 100,
-                currentLevel: 0,
-                maxLevel: 3,
+                id: 'bulletSpeed', name: 'Faster Bullets', baseCost: 100, currentLevel: 0, maxLevel: 3,
                 effect: () => { bulletProps.speed += 2; },
                 description: 'Increases bullet speed by 2.',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.5)); },
                 getDisplayName: function() {
-                    return this.currentLevel < this.maxLevel ?
-                        `${this.name} (Lv.${this.currentLevel + 1})` :
-                        `${this.name} (Max Lv.)`;
+                    return this.currentLevel < this.maxLevel ? `${this.name} (Lv.${this.currentLevel + 1})` : `${this.name} (Max Lv.)`;
                 }
             },
             'healthPack': {
-                id: 'healthPack',
-                name: 'Health Pack',
-                baseCost: 200,
-                currentLevel: 0,
+                id: 'healthPack', name: 'Health Pack', baseCost: 200, currentLevel: 0,
                 effect: () => { playerHealth = Math.min(playerMaxHealth, playerHealth + 50); updateHealthDisplay(); },
                 description: 'Restores 50 health (max 100).',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.25)); },
                 getDisplayName: function() { return this.name; }
             },
-            // Removed 'playerSpeed' upgrade from the shop
             'bulletRange': {
-                id: 'bulletRange',
-                name: 'Extended Range',
-                baseCost: 120,
-                currentLevel: 0,
-                maxLevel: 3,
+                id: 'bulletRange', name: 'Extended Range', baseCost: 120, currentLevel: 0, maxLevel: 3,
                 effect: () => { MAX_AIM_DISTANCE += 50; },
                 description: 'Increases bullet travel distance.',
                 getCost: function() { return Math.floor(this.baseCost * (1 + this.currentLevel * 0.6)); },
                 getDisplayName: function() {
-                    return this.currentLevel < this.maxLevel ?
-                        `${this.name} (Lv.${this.currentLevel + 1})` :
-                        `${this.name} (Max Lv.)`;
+                    return this.currentLevel < this.maxLevel ? `${this.name} (Lv.${this.currentLevel + 1})` : `${this.name} (Max Lv.)`;
                 }
             }
         };
@@ -989,53 +827,40 @@
         // --- Tone.js Sound Effects ---
         const playerSynth = new Tone.Synth({
             oscillator: { type: "triangle" },
-            envelope: {
-                attack: 0.001,
-                decay: 0.1,
-                sustain: 0.05,
-                release: 0.1
-            },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0.05, release: 0.1 },
             volume: -10
         }).toDestination();
 
         const enemySynth = new Tone.Synth({
             oscillator: { type: "sine" },
-            envelope: {
-                attack: 0.01,
-                decay: 0.2,
-                sustain: 0.05,
-                release: 0.2
-            },
+            envelope: { attack: 0.01, decay: 0.2, sustain: 0.05, release: 0.2 },
             volume: -15
         }).toDestination();
 
-        function playPlayerShootSound() {
-            if (soundEnabled) {
-                playerSynth.triggerAttackRelease("C4", "8n");
-            }
-        }
-
-        function playEnemyShootSound() {
-            if (soundEnabled) {
-                enemySynth.triggerAttackRelease("A3", "8n");
-            }
-        }
+        function playPlayerShootSound() { if (soundEnabled) playerSynth.triggerAttackRelease("C4", "8n"); }
+        function playEnemyShootSound() { if (soundEnabled) enemySynth.triggerAttackRelease("A3", "8n"); }
 
         function toggleSound() {
             soundEnabled = soundToggle.checked;
             Tone.Master.mute = !soundEnabled; // Mute Tone.js master output if sound is disabled
             console.log("Sound Enabled:", soundEnabled);
         }
+        function toggleStars() { starsEnabled = starsToggle.checked; console.log("Stars Enabled:", starsEnabled); }
+        function toggleHitboxes() { showHitboxes = hitboxToggle.checked; console.log("Show Hitboxes:", showHitboxes); }
 
-        function toggleStars() {
-            starsEnabled = starsToggle.checked;
-            console.log("Stars Enabled:", starsEnabled);
+        // NEW: Touch controls toggle
+        function applyTouchControlsVisibility() {
+            // If settings toggle is ON, force show. Otherwise rely on media query (mobile) or hide.
+            if (touchControlsEnabled) {
+                touchControls.classList.add('active');
+            } else {
+                touchControls.classList.remove('active');
+            }
         }
-
-        // NEW: Function to toggle hitbox visibility
-        function toggleHitboxes() {
-            showHitboxes = hitboxToggle.checked;
-            console.log("Show Hitboxes:", showHitboxes);
+        function toggleTouchControls() {
+            touchControlsEnabled = touchToggle.checked;
+            applyTouchControlsVisibility();
+            console.log("Touch Controls Enabled:", touchControlsEnabled);
         }
 
         function initializeStars() {
@@ -1046,34 +871,27 @@
                     y: Math.random() * gameHeight,
                     radius: Math.random() * 2,
                     alpha: Math.random() * 0.7 + 0.3,
-                    // Initial speed is now based on baseStarSpeed
                     initialSpeed: Math.random() * 0.5 + 0.5
                 });
             }
         }
 
         function drawStars() {
-            if (!starsEnabled) return; // Only draw stars if enabled
+            if (!starsEnabled) return;
             ctx.fillStyle = '#ffffff';
             stars.forEach(star => {
                 ctx.globalAlpha = star.alpha;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2); ctx.fill();
             });
             ctx.globalAlpha = 1;
         }
 
         function updateStars() {
-            if (!starsEnabled) return; // Only update stars if enabled
-            // Stars scroll faster based on player speed
+            if (!starsEnabled) return;
             const currentStarSpeed = baseStarSpeed + (player.speed * starSpeedMultiplier);
             stars.forEach(star => {
-                star.y += star.initialSpeed * currentStarSpeed; // Use initialSpeed as a multiplier for variation
-                if (star.y > gameHeight) {
-                    star.y = 0;
-                    star.x = Math.random() * gameWidth;
-                }
+                star.y += star.initialSpeed * currentStarSpeed;
+                if (star.y > gameHeight) { star.y = 0; star.x = Math.random() * gameWidth; }
             });
         }
 
@@ -1083,52 +901,35 @@
             gameWidth = canvas.width;
             gameHeight = canvas.height;
             console.log(`[Resize] Canvas resized to Width: ${gameWidth}, Height: ${gameHeight}`);
-
-
             player.x = gameWidth / 2 - player.width / 2;
             player.y = gameHeight - player.height - 50;
             player.initialY = player.y;
-
             messageDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 50)}px`;
             shopDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
             settingsDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
-            howToPlayDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`; // Adjust for new menu
-
+            howToPlayDisplay.style.fontSize = `${Math.max(16, window.innerWidth / 60)}px`;
             initializeStars();
         }
 
-        // Removed drawPlayerHealthBar() as health is now an HTML element
-
-        function drawPlayer() {
-            player.draw();
-            // No longer calling drawPlayerHealthBar() here
-        }
+        function drawPlayer() { player.draw(); }
 
         // NEW: Function to draw player hitbox for debugging
         function drawPlayerHitbox() {
             if (!showHitboxes) return;
-            ctx.strokeStyle = 'lime'; // Bright color for visibility
-            ctx.lineWidth = 2;
-            // Calculate hitbox coordinates relative to player's top-left (x, y)
+            ctx.strokeStyle = 'lime'; ctx.lineWidth = 2;
             const playerHitboxX = player.x + (player.width - player.hitboxWidth) / 2;
             const playerHitboxY = player.y + (player.height - player.hitboxHeight) / 2;
             ctx.strokeRect(playerHitboxX, playerHitboxY, player.hitboxWidth, player.hitboxHeight);
         }
 
-        function drawBullet(bullet) {
-            bulletProps.draw(bullet);
-        }
+        function drawBullet(bullet) { bulletProps.draw(bullet); }
 
         function drawGenericEnemy(enemy) {
             try {
                 const type = enemy.type;
-                if (!type) {
-                    console.error("[Draw Enemy] Enemy type is undefined:", enemy);
-                    return;
-                }
+                if (!type) { console.error("[Draw Enemy] Enemy type is undefined:", enemy); return; }
                 const color = type.colors[0];
                 ctx.fillStyle = color;
-
                 ctx.beginPath();
                 ctx.moveTo(enemy.x + type.width / 2, enemy.y);
                 ctx.lineTo(enemy.x, enemy.y + type.height * 0.3);
@@ -1136,12 +937,8 @@
                 ctx.lineTo(enemy.x + type.width / 2, enemy.y + type.height);
                 ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.7);
                 ctx.lineTo(enemy.x + type.width, enemy.y + type.height * 0.3);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
+                ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
 
                 const eyeCenterX = enemy.x + type.width / 2;
                 const eyeCenterY = enemy.y + type.height / 2;
@@ -1151,37 +948,20 @@
                 glowGradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
                 glowGradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
                 ctx.fillStyle = glowGradient;
-                ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(eyeCenterX, eyeCenterY, eyeRadius + 5, 0, Math.PI * 2); ctx.fill();
 
-                ctx.fillStyle = '#f7fafc';
-                ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#2d3748';
-                ctx.beginPath();
-                ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#f7fafc'; ctx.beginPath(); ctx.arc(eyeCenterX, eyeCenterY, eyeRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#2d3748'; ctx.beginPath(); ctx.arc(eyeCenterX, eyeCenterY, eyeRadius * 0.4, 0, Math.PI * 2); ctx.fill();
 
-                if (type.health > 10) { // Only draw health bar for enemies with more than 10 base health (medium and large)
-                    const healthBarWidth = type.width * 0.8;
-                    const healthBarHeight = 5;
-                    const healthBarX = enemy.x + (type.width - healthBarWidth) / 2;
-                    const healthBarY = enemy.y - 10;
-
-                    ctx.fillStyle = '#c53030';
-                    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
+                if (type.health > 10) {
+                    const healthBarWidth = type.width * 0.8, healthBarHeight = 5;
+                    const healthBarX = enemy.x + (type.width - healthBarWidth) / 2, healthBarY = enemy.y - 10;
+                    ctx.fillStyle = '#c53030'; ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
                     const currentHealthWidth = (enemy.health / type.health) * healthBarWidth;
-                    ctx.fillStyle = '#48bb78';
-                    ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
-
-                    ctx.strokeStyle = '#e2e8f0';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                    ctx.fillStyle = '#48bb78'; ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+                    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
                 }
-                console.log(`[Draw Enemy] Drawing ${type.name} enemy at (${enemy.x}, ${enemy.y})`);
+                // console.log(`[Draw Enemy] Drawing ${type.name} enemy at (${enemy.x}, ${enemy.y})`);
             } catch (error) {
                 console.error("[Draw Enemy] Error drawing enemy:", enemy, error);
             }
@@ -1192,25 +972,14 @@
             if (currentTime - enemy.lastShotTime > enemy.type.shootCooldown) {
                 const startX = enemy.x + enemy.type.width / 2;
                 const startY = enemy.y + enemy.type.height;
-
                 const playerCenterX = player.x + player.width / 2;
                 const playerCenterY = player.y + player.height / 2;
-
                 const angle = Math.atan2(playerCenterY - startY, playerCenterX - startX);
-
                 const bulletDx = enemy.type.bulletSpeed * Math.cos(angle);
                 const bulletDy = enemy.type.bulletSpeed * Math.sin(angle);
-
-                enemyBullets.push({
-                    x: startX,
-                    y: startY,
-                    dx: bulletDx,
-                    dy: bulletDy,
-                    angle: angle
-                });
+                enemyBullets.push({ x: startX, y: startY, dx: bulletDx, dy: bulletDy, angle });
                 enemy.lastShotTime = currentTime;
                 playEnemyShootSound();
-                console.log(`[Enemy Shoot] ${enemy.type.name} enemy shot bullet.`);
             }
         }
 
@@ -1219,47 +988,32 @@
             if (currentTime - boss.lastShotTime > boss.shootCooldown) {
                 const startX = boss.x + boss.width / 2;
                 const startY = boss.y + boss.height;
-
                 const playerCenterX = player.x + player.width / 2;
                 const playerCenterY = player.y + player.height / 2;
-
                 const angle = Math.atan2(playerCenterY - startY, playerCenterX - startX);
-
                 const bulletDx = boss.bulletSpeed * Math.cos(angle);
                 const bulletDy = boss.bulletSpeed * Math.sin(angle);
-
-                enemyBullets.push({
-                    x: startX,
-                    y: startY,
-                    dx: bulletDx,
-                    dy: bulletDy,
-                    angle: angle
-                });
+                enemyBullets.push({ x: startX, y: startY, dx: bulletDx, dy: bulletDy, angle });
                 boss.lastShotTime = currentTime;
                 playEnemyShootSound();
-                console.log("[Boss Shoot] Boss shot bullet.");
             }
         }
 
         function updatePlayer() {
             player.x += player.dx;
             player.y += player.dy;
-
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > gameWidth) player.x = gameWidth - player.width;
-
             if (player.y < 0) player.y = 0;
             if (player.y + player.height > gameHeight) player.y = gameHeight - player.height;
         }
 
         function updateBullets() {
             for (let i = bullets.length - 1; i >= 0; i--) {
-                const bullet = bullets [i];
+                const bullet = bullets[i];
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
-
                 const currentDistanceSq = (bullet.x + bulletProps.width/2 - bullet.startX)**2 + (bullet.y + bulletProps.height/2 - bullet.startY)**2;
-
                 if (currentDistanceSq >= bullet.totalTargetDistanceSq ||
                     bullet.y + bulletProps.height < 0 || bullet.y > gameHeight ||
                     bullet.x + bulletProps.width < 0 || bullet.x > gameWidth) {
@@ -1273,165 +1027,98 @@
                 const bullet = enemyBullets[i];
                 bullet.x += bullet.dx;
                 bullet.y += bullet.dy;
-
                 if (bullet.y > gameHeight || bullet.x < 0 || bullet.x > gameWidth) {
                     enemyBullets.splice(i, 1);
                 }
             }
         }
 
-        const enemySpawnWeights = {
-            'small': 5,
-            'medium': 2,
-            'large': 1
-        };
+        const enemySpawnWeights = { 'small': 5, 'medium': 2, 'large': 1 };
 
         function spawnEnemy() {
             const currentTime = Date.now();
             if (bossActive) {
-                // During boss fight, only small enemies might spawn as support, or no enemies at all.
-                // Current logic spawns small enemies during boss fight.
-                const selectedEnemyType = enemyTypes[0]; // Assuming enemyTypes[0] is 'small'
+                const selectedEnemyType = enemyTypes[0];
                 const x = Math.random() * (gameWidth - selectedEnemyType.width);
                 const y = -selectedEnemyType.height;
-                enemies.push({
-                    x,
-                    y,
-                    type: selectedEnemyType,
-                    health: selectedEnemyType.health,
-                    lastShotTime: currentTime
-                });
+                enemies.push({ x, y, type: selectedEnemyType, health: selectedEnemyType.health, lastShotTime: currentTime });
                 enemyProps.lastSpawnTime = currentTime;
-                console.log(`[Spawn Enemy] Spawning ${selectedEnemyType.name} during boss fight.`);
                 return;
             }
-
             if (currentTime - enemyProps.lastSpawnTime > enemyProps.spawnInterval) {
                 let currentWeights = {};
-                if (wave <= 1) {
-                    currentWeights = { 'small': enemySpawnWeights.small };
-                } else if (wave <= 3) {
-                    currentWeights = { 'small': enemySpawnWeights.small, 'medium': enemySpawnWeights.medium };
-                } else {
-                    currentWeights = enemySpawnWeights; // All enemy types are eligible
-                }
-                console.log(`[Spawn Enemy] Current wave: ${wave}. Eligible enemy types based on weights:`, currentWeights);
+                if (wave <= 1) currentWeights = { 'small': enemySpawnWeights.small };
+                else if (wave <= 3) currentWeights = { 'small': enemySpawnWeights.small, 'medium': enemySpawnWeights.medium };
+                else currentWeights = enemySpawnWeights;
 
                 let weightedEnemyTypes = [];
                 for (const typeName in currentWeights) {
                     const weight = currentWeights[typeName];
                     const enemyType = enemyTypes.find(et => et.name === typeName);
-                    if (enemyType) {
-                        for (let i = 0; i < weight; i++) {
-                            weightedEnemyTypes.push(enemyType);
-                        }
-                    }
+                    if (enemyType) for (let i = 0; i < weight; i++) weightedEnemyTypes.push(enemyType);
                 }
-
-                if (weightedEnemyTypes.length === 0) {
-                    console.warn("[Spawn Enemy] No eligible enemy types to spawn based on current weights.");
-                    return;
-                }
+                if (weightedEnemyTypes.length === 0) return;
 
                 const selectedEnemyType = weightedEnemyTypes[Math.floor(Math.random() * weightedEnemyTypes.length)];
-                console.log(`[Spawn Enemy] Selected enemy type: ${selectedEnemyType.name}`);
-
                 const x = Math.random() * (gameWidth - selectedEnemyType.width);
                 const y = -selectedEnemyType.height;
 
-                enemies.push({
-                    x,
-                    y,
-                    type: selectedEnemyType,
-                    health: selectedEnemyType.health,
-                    lastShotTime: currentTime
-                });
+                enemies.push({ x, y, type: selectedEnemyType, health: selectedEnemyType.health, lastShotTime: currentTime });
                 enemyProps.lastSpawnTime = currentTime;
-                console.log(`[Spawn Enemy] Added ${selectedEnemyType.name} enemy. Total enemies: ${enemies.length}`);
             }
         }
 
         function updateEnemies() {
             for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies [i];
-                if (!enemy || !enemy.type) {
-                    console.error("[Update Enemies] Invalid enemy object encountered, skipping:", enemy);
-                    enemies.splice(i, 1); // Remove invalid enemy to prevent further errors
-                    continue;
-                }
+                const enemy = enemies[i];
+                if (!enemy || !enemy.type) { enemies.splice(i, 1); continue; }
                 enemy.y += enemy.type.baseSpeed + (bossFightsCompleted * speedIncreasePerBoss);
-
-                if (enemy.type.canShoot) {
-                    shootEnemyBullet(enemy);
-                }
-
-                if (enemy.y + enemy.type.height > gameHeight) {
-                    console.log(`[Update Enemies] ${enemy.type.name} enemy left screen, removing.`);
-                    enemies.splice(i, 1);
-                }
+                if (enemy.type.canShoot) shootEnemyBullet(enemy);
+                if (enemy.y + enemy.type.height > gameHeight) enemies.splice(i, 1);
             }
         }
 
         function updateBoss() {
             if (!bossActive) return;
-
             boss.x += boss.dx;
-
-            if (boss.x < 0 || boss.x + boss.width > gameWidth) {
-                boss.dx *= -1;
-                console.log("[Update Boss] Boss hit horizontal boundary, reversing direction.");
-            }
-
-            if (boss.y < gameHeight * 0.2) {
-                boss.y += boss.speed * 0.5;
-            }
-
+            if (boss.x < 0 || boss.x + boss.width > gameWidth) boss.dx *= -1;
+            if (boss.y < gameHeight * 0.2) boss.y += boss.speed * 0.5;
             shootBossBullet(boss);
         }
 
         function checkCollisions() {
-            // Calculate player's actual hitbox coordinates
             const playerHitboxX = player.x + (player.width - player.hitboxWidth) / 2;
             const playerHitboxY = player.y + (player.height - player.hitboxHeight) / 2;
 
             // Player bullets vs. Enemies
             for (let i = bullets.length - 1; i >= 0; i--) {
                 for (let j = enemies.length - 1; j >= 0; j--) {
-                    const bullet = bullets [i];
-                    const enemy = enemies [j];
+                    const bullet = bullets[i], enemy = enemies[j];
                     if (bullet && enemy &&
                         bullet.x < enemy.x + enemy.type.width &&
                         bullet.x + bulletProps.width > enemy.x &&
                         bullet.y < enemy.y + enemy.type.height &&
-                        bullet.y + bulletProps.height > enemy.y
-                    ) {
+                        bullet.y + bulletProps.height > enemy.y) {
                         bullets.splice(i, 1);
                         enemy.health -= 10;
-                        console.log(`[Collision] Player bullet hit ${enemy.type.name} enemy. New health: ${enemy.health}`);
                         if (enemy.health <= 0) {
                             enemies.splice(j, 1);
                             score += enemy.type.scoreValue;
                             enemiesDefeatedInWave++;
                             updateScoreDisplay();
-                            console.log(`[Collision] ${enemy.type.name} enemy defeated. Score: ${score}, Enemies defeated this wave: ${enemiesDefeatedInWave}`);
-
-
                             if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
                                 wave++;
                                 enemiesDefeatedInWave = 0;
                                 enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
-                                console.log(`[Wave Progression] Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
                                 updateScoreDisplay();
                                 showOverlayMessage(`Wave ${wave} Incoming!`);
-
                                 if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
-                                    console.log(`[Wave Progression] Time for a boss fight! Current wave: ${wave}`);
-                                    enemies.length = 0; // Clear remaining enemies
+                                    enemies.length = 0;
                                     startBossFight();
                                 }
                             }
                         }
-                        break; // Break inner loop after bullet hits one enemy
+                        break;
                     }
                 }
             }
@@ -1440,67 +1127,52 @@
             if (bossActive) {
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const bullet = bullets[i];
-                    if (
-                        bullet.x < boss.x + boss.width &&
+                    if (bullet.x < boss.x + boss.width &&
                         bullet.x + bulletProps.width > boss.x &&
                         bullet.y < boss.y + boss.height &&
-                        bullet.y + bulletProps.height > boss.y
-                    ) {
+                        bullet.y + bulletProps.height > boss.y) {
                         bullets.splice(i, 1);
                         boss.health -= 1;
                         updateBossHealthDisplay();
-                        console.log(`[Collision] Player bullet hit Boss. New health: ${boss.health}`);
-                        if (boss.health <= 0) {
-                            defeatBoss();
-                        }
+                        if (boss.health <= 0) defeatBoss();
                         break;
                     }
                 }
             }
 
-            // Player vs. Enemies (collision) - NOW USING PLAYER HITBOX
+            // Player vs. Enemies
             for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies [i];
-                if (
-                    playerHitboxX < enemy.x + enemy.type.width &&
+                const enemy = enemies[i];
+                if (playerHitboxX < enemy.x + enemy.type.width &&
                     playerHitboxX + player.hitboxWidth > enemy.x &&
                     playerHitboxY < enemy.y + enemy.type.height &&
-                    playerHitboxY + player.hitboxHeight > enemy.y
-                ) {
-                    console.log(`[Collision] Player collided with ${enemy.type.name} enemy.`);
+                    playerHitboxY + player.hitboxHeight > enemy.y) {
                     enemies.splice(i, 1);
                     takeDamage(5, 'enemy collision');
-                    break; // Break after player hits one enemy
+                    break;
                 }
             }
 
-            // Player vs. Enemy Bullets - NOW USING PLAYER HITBOX
+            // Player vs. Enemy Bullets
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 const eBullet = enemyBullets[i];
-                if (
-                    eBullet.x < playerHitboxX + player.hitboxWidth &&
+                if (eBullet.x < playerHitboxX + player.hitboxWidth &&
                     eBullet.x + enemyBulletProps.width > playerHitboxX &&
                     eBullet.y < playerHitboxY + player.hitboxHeight &&
-                    eBullet.y + enemyBulletProps.height > playerHitboxY
-                ) {
-                    console.log(`[Collision] Player hit by enemy bullet.`);
+                    eBullet.y + enemyBulletProps.height > playerHitboxY) {
                     enemyBullets.splice(i, 1);
                     takeDamage(enemyBulletProps.damage, 'enemy bullet');
-                    break; // Break after player hits one enemy bullet
+                    break;
                 }
             }
 
-            // Player vs. Boss (collision) - NOW USING PLAYER HITBOX
+            // Player vs. Boss
             if (bossActive) {
-                if (
-                    playerHitboxX < boss.x + boss.width &&
+                if (playerHitboxX < boss.x + boss.width &&
                     playerHitboxX + player.hitboxWidth > boss.x &&
                     playerHitboxY < boss.y + boss.height &&
-                    playerHitboxY + player.hitboxHeight > boss.y
-                ) {
-                    console.log("[Collision] Player collided with Boss.");
+                    playerHitboxY + player.hitboxHeight > boss.y) {
                     takeDamage(50, 'boss collision');
-                    // No return here, allow other collisions to be checked if necessary, though boss collision is usually severe.
                 }
             }
         }
@@ -1510,32 +1182,24 @@
             if (currentTime - bulletProps.lastShotTime > bulletProps.cooldown) {
                 const startX = player.x + player.width / 2;
                 const startY = player.y + player.height / 2;
-
                 const targetX = aimIndicator.x;
                 const targetY = aimIndicator.y;
-
                 const deltaX = targetX - startX;
                 const deltaY = targetY - startY;
                 const angle = Math.atan2(deltaY, deltaX);
-
                 const bulletDx = bulletProps.speed * Math.cos(angle);
                 const bulletDy = bulletProps.speed * Math.sin(angle);
-
                 const totalTargetDistanceSq = (targetX - startX)**2 + (targetY - startY)**2;
-
                 bullets.push({
                     x: startX - bulletProps.width / 2,
                     y: startY - bulletProps.height / 2,
-                    dx: bulletDx,
-                    dy: bulletDy,
-                    startX: startX,
-                    startY: startY,
+                    dx: bulletDx, dy: bulletDy,
+                    startX, startY,
                     totalTargetDistanceSq: totalTargetDistanceSq,
-                    angle: angle
+                    angle
                 });
                 bulletProps.lastShotTime = currentTime;
                 playPlayerShootSound();
-                console.log("[Player Shoot] Bullet fired.");
             }
         }
 
@@ -1547,68 +1211,47 @@
         function updateHealthDisplay() {
             const healthPercentage = (playerHealth / playerMaxHealth) * 100;
             currentHealthBar.style.width = `${healthPercentage}%`;
-            // You can also change the color based on health percentage if desired
-            if (healthPercentage > 50) {
-                currentHealthBar.style.backgroundColor = '#48bb78'; // Green
-            } else if (healthPercentage > 20) {
-                currentHealthBar.style.backgroundColor = '#f6ad55'; // Orange
-            } else {
-                currentHealthBar.style.backgroundColor = '#e53e3e'; // Red
-            }
+            if (healthPercentage > 50) currentHealthBar.style.backgroundColor = '#48bb78';
+            else if (healthPercentage > 20) currentHealthBar.style.backgroundColor = '#f6ad55';
+            else currentHealthBar.style.backgroundColor = '#e53e3e';
             console.log(`[Health Update] Player Health: ${playerHealth}/${playerMaxHealth}`);
         }
 
-        function updateBossHealthDisplay() {
-            // Health bar is drawn directly in boss.draw()
-            console.log(`[Boss Health] Boss Health: ${boss.health}/${boss.maxHealth}`);
-        }
+        function updateBossHealthDisplay() { console.log(`[Boss Health] Boss Health: ${boss.health}/${boss.maxHealth}`); }
 
         function takeDamage(amount, reason = 'unknown cause') {
             console.log(`[Damage] Player took ${amount} damage due to: ${reason}`);
             playerHealth -= amount;
-            if (playerHealth < 0) {
-                playerHealth = 0;
-            }
+            if (playerHealth < 0) playerHealth = 0;
             updateHealthDisplay();
-
             flashEffect.active = true;
             flashEffect.startTime = Date.now();
-
-            if (playerHealth <= 0) {
-                gameOver();
-            }
+            if (playerHealth <= 0) gameOver();
         }
 
         function gameOver() {
             console.log("[Game Over] Game Over initiated.");
-            gameRunning = false;
-            bossActive = false;
-            paused = false;
-            shopOpen = false;
-            settingsOpen = false;
-            howToPlayOpen = false; // Ensure howToPlay is closed
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null; // Clear the animation frame ID
-
+            gameRunning = false; bossActive = false; paused = false;
+            shopOpen = false; settingsOpen = false; howToPlayOpen = false;
+            cancelAnimationFrame(animationFrameId); animationFrameId = null;
             messageText.textContent = `Game Over! Final Score: ${score}`;
             messageDisplay.style.display = 'flex';
             startButton.classList.add('hidden');
             restartButton.classList.remove('hidden');
-            howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
-            settingsButtonTitle.classList.remove('hidden'); // Show settings button on game over screen
-
+            howToPlayButtonTitle.classList.remove('hidden');
+            settingsButtonTitle.classList.remove('hidden');
             messageDisplay.classList.remove('overlay-message');
 
             uiContainer.classList.add('hidden');
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
-            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            healthBarDisplay.classList.add('hidden');
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
             settingsButtonInGame.classList.add('hidden');
-            shopDisplay.style.display = 'none'; // Ensure shop is hidden
-            settingsDisplay.style.display = 'none'; // Ensure settings are hidden
-            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
+            shopDisplay.style.display = 'none';
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'none';
 
             startTitleAnimation();
         }
@@ -1620,21 +1263,18 @@
             messageDisplay.classList.add('overlay-message');
             startButton.classList.add('hidden');
             restartButton.classList.add('hidden');
-            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
-            settingsButtonTitle.classList.add('hidden'); // Hide settings button for simple messages
-
+            howToPlayButtonTitle.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden');
             setTimeout(() => {
                 messageDisplay.style.display = 'none';
                 messageDisplay.classList.remove('overlay-message');
-                console.log(`[Overlay Message] Hidden: "${message}"`);
             }, 2000);
         }
-
 
         function startBossFight() {
             console.log("[Boss Fight] Starting boss fight!");
             bossActive = true;
-            enemies.length = 0; // Clear any remaining regular enemies
+            enemies.length = 0;
             boss.maxHealth = 100 + (Math.floor(wave / wavesPerBoss) - 1) * 100;
             boss.health = boss.maxHealth;
             boss.width = gameWidth * 0.6;
@@ -1654,332 +1294,172 @@
             score += 500;
             updateScoreDisplay();
             showOverlayMessage(`Boss Defeated! Wave ${wave + 1} Incoming!`);
-
             bossFightsCompleted++;
-            player.speed += playerSpeedIncreasePerBoss; // Increase player speed after boss fight
-            console.log(`[Boss Fight] Player speed increased to: ${player.speed}`);
-
-            enemyProps.spawnInterval = baseSpawnInterval; // Reset spawn interval after boss
-            console.log(`[Boss Fight] Boss Fights Completed: ${bossFightsCompleted}. Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval Reset: ${enemyProps.spawnInterval}`);
-
+            player.speed += playerSpeedIncreasePerBoss;
+            enemyProps.spawnInterval = baseSpawnInterval;
             wave++;
             enemiesDefeatedInWave = 0;
-            enemiesRequiredForWave = 15; // Reset enemies required for next wave
-            enemies.length = 0; // Clear any remaining enemies
-            enemyBullets.length = 0; // Clear any remaining enemy bullets
+            enemiesRequiredForWave = 15;
+            enemies.length = 0;
+            enemyBullets.length = 0;
         }
 
         function startGame() {
             console.log("startGame called.");
-            if (titleAnimationId) {
-                cancelAnimationFrame(titleAnimationId);
-                titleAnimationId = null;
-            }
+            if (titleAnimationId) { cancelAnimationFrame(titleAnimationId); titleAnimationId = null; }
 
             score = 0;
-            playerHealth = playerMaxHealth; // Initialize playerHealth to the new playerMaxHealth
+            playerHealth = playerMaxHealth;
             wave = 1;
             enemiesRequiredForWave = 15;
             enemiesDefeatedInWave = 0;
-            gameRunning = true;
-            shopOpen = false;
-            bossActive = false;
-            paused = false;
-            settingsOpen = false; // Ensure settings are closed when game starts
-            howToPlayOpen = false; // Ensure howToPlay is closed when game starts
-            bullets.length = 0;
-            enemies.length = 0;
-            enemyBullets.length = 0;
+            gameRunning = true; shopOpen = false; bossActive = false; paused = false;
+            settingsOpen = false; howToPlayOpen = false;
+            bullets.length = 0; enemies.length = 0; enemyBullets.length = 0;
 
             bossFightsCompleted = 0;
             enemyProps.spawnInterval = baseSpawnInterval;
             enemyProps.lastSpawnTime = Date.now();
-            console.log(`[Game Start] Game Started! Initial Enemy Speed Base: ${baseEnemySpeed + (bossFightsCompleted * speedIncreasePerBoss)}, Spawn Interval: ${enemyProps.spawnInterval}`);
 
             bulletProps.lastShotTime = 0;
-            player.dx = 0;
-            player.dy = 0;
+            player.dx = 0; player.dy = 0;
             player.currentAngle = -Math.PI / 2;
             player.targetAngle = -Math.PI / 2;
             player.y = player.initialY;
             player.titleAnimationOffset = 0;
 
             MAX_AIM_DISTANCE = 250;
-            for (const key in shopItems) {
-                // Reset levels for upgrades that are still in the shop
-                if (shopItems[key].currentLevel !== undefined) {
-                    shopItems[key].currentLevel = 0;
-                }
-            }
-            player.speed = basePlayerSpeed; // Reset player speed to base
+            for (const key in shopItems) { if (shopItems[key].currentLevel !== undefined) shopItems[key].currentLevel = 0; }
+            player.speed = basePlayerSpeed;
             bulletProps.speed = 10;
 
             updateScoreDisplay();
-            updateHealthDisplay(); // Call to update the new HTML health bar
-            resizeCanvas(); // Ensure canvas is correctly sized before drawing
+            updateHealthDisplay();
+            resizeCanvas();
 
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
 
             startButton.classList.add('hidden');
             restartButton.classList.add('hidden');
-            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
-            settingsButtonTitle.classList.add('hidden'); // Hide title settings button
-            settingsDisplay.style.display = 'none'; // Explicitly hide settings display on game start
-            howToPlayDisplay.style.display = 'none'; // Explicitly hide how to play display on game start
+            howToPlayButtonTitle.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden');
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'none';
 
-            // Show game UI elements
             uiContainer.classList.remove('hidden');
             scoreBoard.classList.remove('hidden');
             waveBoard.classList.remove('hidden');
-            healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+            healthBarDisplay.classList.remove('hidden');
             shopButton.classList.remove('hidden');
             pauseButton.classList.remove('hidden');
-            settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
+            settingsButtonInGame.classList.remove('hidden');
 
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
+            // Apply touch controls visibility in case it's enabled
+            applyTouchControlsVisibility();
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
             console.log("startGame finished. gameRunning:", gameRunning);
-        };
+        }
 
         function pauseGame() {
-            if (!gameRunning || paused || shopOpen || settingsOpen || howToPlayOpen) {
-                console.log("[Pause] Cannot pause. Current state: gameRunning=", gameRunning, "paused=", paused, "shopOpen=", shopOpen, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
-                return; // Prevent pausing if game is not running or already paused/menu is open
-            }
+            if (!gameRunning || paused || shopOpen || settingsOpen || howToPlayOpen) return;
             paused = true;
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null; // Clear the animation frame ID
+            cancelAnimationFrame(animationFrameId); animationFrameId = null;
             showOverlayMessage("Game Paused");
-            console.log("[Pause] Game Paused. gameRunning:", gameRunning, "paused:", paused);
-
-            // Hide game UI elements during pause
             uiContainer.classList.add('hidden');
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
-            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            healthBarDisplay.classList.add('hidden');
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
             settingsButtonInGame.classList.add('hidden');
         }
 
         function resumeGame() {
-            if (!gameRunning || !paused || shopOpen || settingsOpen || howToPlayOpen) {
-                console.log("[Resume] Cannot resume. Current state: gameRunning=", gameRunning, "paused=", paused, "shopOpen=", shopOpen, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
-                return; // Prevent resuming if game is not running, not paused, or menu is open
-            }
+            if (!gameRunning || !paused || shopOpen || settingsOpen || howToPlayOpen) return;
             paused = false;
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
-            console.log("[Resume] Game Resumed. gameRunning:", gameRunning, "paused:", paused);
-
-            // Show game UI elements
             uiContainer.classList.remove('hidden');
             scoreBoard.classList.remove('hidden');
             waveBoard.classList.remove('hidden');
-            healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+            healthBarDisplay.classList.remove('hidden');
             shopButton.classList.remove('hidden');
             pauseButton.classList.remove('hidden');
-            settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
+            settingsButtonInGame.classList.remove('hidden');
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
         }
 
         function togglePause() {
-            if (gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
-                if (paused) {
-                    resumeGame();
-                } else {
-                    pauseGame();
-                }
-            } else {
-                console.log("[Toggle Pause] Game not in a state to toggle pause. gameRunning:", gameRunning, "shopOpen:", shopOpen, "settingsOpen:", settingsOpen, "howToPlayOpen:", howToPlayOpen);
+            if (gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) {
+                if (paused) resumeGame(); else pauseGame();
             }
         }
 
         function openShop() {
             wasGameRunningBeforeShop = gameRunning;
-            console.log("[Shop] openShop called. gameRunning before:", gameRunning, "wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
-
-            if (gameRunning) {
-                gameRunning = false;
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null; // Clear the animation frame ID
-            }
-            if (titleAnimationId) {
-                cancelAnimationFrame(titleAnimationId);
-                titleAnimationId = null;
-            }
-            paused = false; // Ensure not paused when shop is open
-            settingsOpen = false; // Ensure settings are closed
-            howToPlayOpen = false; // Ensure howToPlay is closed
-
+            if (gameRunning) { gameRunning = false; cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+            if (titleAnimationId) { cancelAnimationFrame(titleAnimationId); titleAnimationId = null; }
+            paused = false; settingsOpen = false; howToPlayOpen = false;
             shopOpen = true;
             messageDisplay.style.display = 'none';
             messageDisplay.classList.remove('overlay-message');
-            settingsDisplay.style.display = 'none'; // Ensure settings are hidden
-            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'none';
             shopDisplay.style.display = 'block';
             renderShopItems();
-
-            // Hide game UI elements when shop is open
             uiContainer.classList.add('hidden');
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
-            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
+            healthBarDisplay.classList.add('hidden');
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
             settingsButtonInGame.classList.add('hidden');
-            console.log("[Shop] openShop finished. gameRunning:", gameRunning, "shopOpen:", shopOpen);
         }
 
         function closeShop() {
             shopOpen = false;
             shopDisplay.style.display = 'none';
-            console.log("[Shop] closeShop called. wasGameRunningBeforeShop:", wasGameRunningBeforeShop);
-
             if (wasGameRunningBeforeShop) {
                 gameRunning = true;
-                // Show game UI elements
                 uiContainer.classList.remove('hidden');
                 scoreBoard.classList.remove('hidden');
                 waveBoard.classList.remove('hidden');
-                healthBarDisplay.classList.remove('hidden'); // Show the new health bar
+                healthBarDisplay.classList.remove('hidden');
                 shopButton.classList.remove('hidden');
                 pauseButton.classList.remove('hidden');
-                settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
+                settingsButtonInGame.classList.remove('hidden');
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
-                console.log("[Shop] closeShop finished. Resuming game. gameRunning:", gameRunning);
             } else {
                 startTitleAnimation();
                 messageText.textContent = "That Shooting Game";
-                messageDisplay.style.display = 'flex'; // Display as panel
+                messageDisplay.style.display = 'flex';
                 startButton.classList.remove('hidden');
                 restartButton.classList.add('hidden');
-                howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
-                settingsButtonTitle.classList.remove('hidden'); // Show title settings button
+                howToPlayButtonTitle.classList.remove('hidden');
+                settingsButtonTitle.classList.remove('hidden');
                 messageDisplay.classList.remove('overlay-message');
-
-                // Set flag to prevent immediate clicks
                 isTransitioningFromMenu = true;
-                setTimeout(() => {
-                    isTransitioningFromMenu = false;
-                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeShop).");
-                }, 200); // Short delay
-
-                console.log("[Shop] closeShop finished. Returning to title. gameRunning:", gameRunning);
+                setTimeout(() => { isTransitioningFromMenu = false; }, 200);
             }
         }
 
         function openSettings() {
-            console.log("[Settings] openSettings called. gameRunning before:", gameRunning);
-            // Store the current gameRunning state before pausing for settings
             wasGameRunningBeforeSettings = gameRunning;
-
-            if (gameRunning) {
-                gameRunning = false; // Temporarily set to false to pause the game loop
-                cancelAnimationFrame(animationFrameId); // Pause game loop
-                animationFrameId = null; // Clear the animation frame ID
-            }
-            // Stop title animation if it's running and settings is opened from title
-            if (titleAnimationId) {
-                cancelAnimationFrame(titleAnimationId);
-                titleAnimationId = null;
-            }
-            paused = false; // Ensure not paused when settings are open
-            shopOpen = false; // Ensure shop is closed
-            howToPlayOpen = false; // Ensure howToPlay is closed
-
-            settingsOpen = true; // Set settingsOpen flag to true
-            messageDisplay.style.display = 'none'; // Hide game over/title message
-            shopDisplay.style.display = 'none'; // Ensure shop is hidden
-            howToPlayDisplay.style.display = 'none'; // Ensure howToPlay is hidden
-            settingsDisplay.style.display = 'block'; // Show settings display
-
-            // Update toggle state to match current soundEnabled
-            soundToggle.checked = soundEnabled;
-            starsToggle.checked = starsEnabled; // Set stars toggle state
-            hitboxToggle.checked = showHitboxes; // NEW: Set hitbox toggle state
-
-            // Hide game UI elements when settings are open
-            uiContainer.classList.add('hidden');
-            scoreBoard.classList.add('hidden');
-            waveBoard.classList.add('hidden');
-            healthBarDisplay.classList.add('hidden'); // Hide the new health bar
-            shopButton.classList.add('hidden');
-            pauseButton.classList.add('hidden');
-            settingsButtonInGame.classList.add('hidden');
-            startButton.classList.add('hidden'); // Hide start button
-            restartButton.classList.add('hidden'); // Hide restart button
-            howToPlayButtonTitle.classList.add('hidden'); // Hide how to play button
-            settingsButtonTitle.classList.add('hidden'); // Hide title settings button
-            console.log("[Settings] openSettings finished. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings, "gameRunning:", gameRunning);
-        }
-
-        function closeSettings() {
-            settingsOpen = false; // Set settingsOpen flag to false
-            settingsDisplay.style.display = 'none';
-            console.log("[Settings] closeSettings called. wasGameRunningBeforeSettings:", wasGameRunningBeforeSettings);
-
-            // Use the stored state to decide whether to resume game or title animation
-            if (wasGameRunningBeforeSettings) {
-                gameRunning = true; // Restore gameRunning state
-                // Show game UI elements
-                uiContainer.classList.remove('hidden');
-                scoreBoard.classList.remove('hidden');
-                waveBoard.classList.remove('hidden');
-                healthBarDisplay.classList.remove('hidden'); // Show the new health bar
-                shopButton.classList.remove('hidden');
-                pauseButton.classList.remove('hidden');
-                settingsButtonInGame.classList.remove('hidden'); // Show in-game settings button
-                animationFrameId = requestAnimationFrame(gameLoopWithInput); // Resume the game loop
-                console.log("[Settings] closeSettings finished. Resuming game. gameRunning:", gameRunning);
-            } else {
-                // If game was not running (came from title screen), start title animation
-                startTitleAnimation();
-                // Show only start button and game title
-                messageText.textContent = "That Shooting Game";
-                messageDisplay.style.display = 'flex'; // Display as panel
-                startButton.classList.remove('hidden');
-                restartButton.classList.add('hidden');
-                howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button
-                settingsButtonTitle.classList.remove('hidden'); // Show title settings button
-
-                // Set flag to prevent immediate clicks
-                isTransitioningFromMenu = true;
-                setTimeout(() => {
-                    isTransitioningFromMenu = false;
-                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeSettings).");
-                }, 200); // Short delay to prevent ghost clicks
-
-                console.log("[Settings] closeSettings finished. Returning to title screen. gameRunning:", gameRunning);
-            }
-        }
-
-        function openHowToPlay() {
-            console.log("[HowToPlay] openHowToPlay called. gameRunning before:", gameRunning);
-            wasGameRunningBeforeHowToPlay = gameRunning;
-
-            if (gameRunning) {
-                gameRunning = false;
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null; // Clear the animation frame ID
-            }
-            if (titleAnimationId) {
-                cancelAnimationFrame(titleAnimationId);
-                titleAnimationId = null;
-            }
-            paused = false;
-            shopOpen = false;
-            settingsOpen = false;
-
-            howToPlayOpen = true;
+            if (gameRunning) { gameRunning = false; cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+            if (titleAnimationId) { cancelAnimationFrame(titleAnimationId); titleAnimationId = null; }
+            paused = false; shopOpen = false; howToPlayOpen = false;
+            settingsOpen = true;
             messageDisplay.style.display = 'none';
             shopDisplay.style.display = 'none';
-            settingsDisplay.style.display = 'none';
-            howToPlayDisplay.style.display = 'block';
-
+            howToPlayDisplay.style.display = 'none';
+            settingsDisplay.style.display = 'block';
+            soundToggle.checked = soundEnabled;
+            starsToggle.checked = starsEnabled;
+            hitboxToggle.checked = showHitboxes;
+            touchToggle.checked = touchControlsEnabled; // NEW: sync toggle
             uiContainer.classList.add('hidden');
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
@@ -1991,14 +1471,60 @@
             restartButton.classList.add('hidden');
             howToPlayButtonTitle.classList.add('hidden');
             settingsButtonTitle.classList.add('hidden');
-            console.log("[HowToPlay] openHowToPlay finished. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay, "gameRunning:", gameRunning);
+        }
+
+        function closeSettings() {
+            settingsOpen = false;
+            settingsDisplay.style.display = 'none';
+            if (wasGameRunningBeforeSettings) {
+                gameRunning = true;
+                uiContainer.classList.remove('hidden');
+                scoreBoard.classList.remove('hidden');
+                waveBoard.classList.remove('hidden');
+                healthBarDisplay.classList.remove('hidden');
+                shopButton.classList.remove('hidden');
+                pauseButton.classList.remove('hidden');
+                settingsButtonInGame.classList.remove('hidden');
+                animationFrameId = requestAnimationFrame(gameLoopWithInput);
+            } else {
+                startTitleAnimation();
+                messageText.textContent = "That Shooting Game";
+                messageDisplay.style.display = 'flex';
+                startButton.classList.remove('hidden');
+                restartButton.classList.add('hidden');
+                howToPlayButtonTitle.classList.remove('hidden');
+                settingsButtonTitle.classList.remove('hidden');
+                isTransitioningFromMenu = true;
+                setTimeout(() => { isTransitioningFromMenu = false; }, 200);
+            }
+        }
+
+        function openHowToPlay() {
+            wasGameRunningBeforeHowToPlay = gameRunning;
+            if (gameRunning) { gameRunning = false; cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+            if (titleAnimationId) { cancelAnimationFrame(titleAnimationId); titleAnimationId = null; }
+            paused = false; shopOpen = false; settingsOpen = false;
+            howToPlayOpen = true;
+            messageDisplay.style.display = 'none';
+            shopDisplay.style.display = 'none';
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'block';
+            uiContainer.classList.add('hidden');
+            scoreBoard.classList.add('hidden');
+            waveBoard.classList.add('hidden');
+            healthBarDisplay.classList.add('hidden');
+            shopButton.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            settingsButtonInGame.classList.add('hidden');
+            startButton.classList.add('hidden');
+            restartButton.classList.add('hidden');
+            howToPlayButtonTitle.classList.add('hidden');
+            settingsButtonTitle.classList.add('hidden');
         }
 
         function closeHowToPlay() {
             howToPlayOpen = false;
             howToPlayDisplay.style.display = 'none';
-            console.log("[HowToPlay] closeHowToPlay called. wasGameRunningBeforeHowToPlay:", wasGameRunningBeforeHowToPlay);
-
             if (wasGameRunningBeforeHowToPlay) {
                 gameRunning = true;
                 uiContainer.classList.remove('hidden');
@@ -2009,7 +1535,6 @@
                 pauseButton.classList.remove('hidden');
                 settingsButtonInGame.classList.remove('hidden');
                 animationFrameId = requestAnimationFrame(gameLoopWithInput);
-                console.log("[HowToPlay] closeHowToPlay finished. Resuming game. gameRunning:", gameRunning);
             } else {
                 startTitleAnimation();
                 messageText.textContent = "That Shooting Game";
@@ -2018,23 +1543,16 @@
                 restartButton.classList.add('hidden');
                 howToPlayButtonTitle.classList.remove('hidden');
                 settingsButtonTitle.classList.remove('hidden');
-
                 isTransitioningFromMenu = true;
-                setTimeout(() => {
-                    isTransitioningFromMenu = false;
-                    console.log("[Transition] isTransitioningFromMenu reset to false (from closeHowToPlay).");
-                }, 200);
-
-                console.log("[HowToPlay] closeHowToPlay finished. Returning to title screen. gameRunning:", gameRunning);
+                setTimeout(() => { isTransitioningFromMenu = false; }, 200);
             }
         }
 
         function renderShopItems() {
             shopItemsContainer.innerHTML = '';
             shopScoreDisplay.textContent = score;
-
             for (const key in shopItems) {
-                const item = shopItems [key];
+                const item = shopItems[key];
                 const itemCost = item.getCost();
                 const itemDisplayName = item.getDisplayName();
 
@@ -2071,119 +1589,77 @@
         }
 
         function buyItem(itemId) {
-            const item = shopItems [itemId];
+            const item = shopItems[itemId];
             const itemCost = item.getCost();
-
             if (score >= itemCost) {
                 score -= itemCost;
                 updateScoreDisplay();
                 item.effect();
-
-                if (item.currentLevel !== undefined) {
-                    item.currentLevel++;
-                }
+                if (item.currentLevel !== undefined) item.currentLevel++;
                 renderShopItems();
-                console.log(`[Shop] Bought ${item.name}. New score: ${score}`);
             } else {
                 console.log(`[Shop] Not enough points to buy ${item.name}! Need ${itemCost}, have ${score}.`);
             }
         }
 
         const keyState = {};
-
         window.addEventListener('keydown', (e) => {
-            keyState [e.key.toLowerCase()] = true;
+            keyState[e.key.toLowerCase()] = true;
             if (e.key === ' ' || e.key === 'spacebar') {
                 e.preventDefault();
-                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) shoot(); // Use all menu flags
+                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) shoot();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                // If any menu is open, close it first
-                if (shopOpen) {
-                    closeShop();
-                } else if (settingsOpen) {
-                    closeSettings();
-                } else if (howToPlayOpen) {
-                    closeHowToPlay();
-                }
-                else {
-                    togglePause();
-                }
-            } else if (e.key.toLowerCase() === 'g' && e.ctrlKey) { // Added Ctrl+g shortcut
+                if (shopOpen) closeShop();
+                else if (settingsOpen) closeSettings();
+                else if (howToPlayOpen) closeHowToPlay();
+                else togglePause();
+            } else if (e.key.toLowerCase() === 'g' && e.ctrlKey) {
                 e.preventDefault();
-                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) {
-                    window.advanceWave();
-                } else {
-                    console.warn("[Keyboard Shortcut] Cannot advance wave: game is not running or a menu is open/paused.");
-                }
-            } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) { // NEW: Ctrl+h shortcut for 9000 points
+                if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) window.advanceWave();
+            } else if (e.key.toLowerCase() === 'h' && e.ctrlKey) {
                 e.preventDefault();
                 if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) {
                     window.addScore(9000);
-                    showOverlayMessage("9000 Points Added!"); // Optional: show a message
-                } else {
-                    console.warn("[Keyboard Shortcut] Cannot add score: game is not running or a menu is open/paused.");
+                    showOverlayMessage("9000 Points Added!");
                 }
             }
         });
-
-        window.addEventListener('keyup', (e) => {
-            keyState [e.key.toLowerCase()] = false;
-        });
+        window.addEventListener('keyup', (e) => { keyState[e.key.toLowerCase()] = false; });
 
         window.addEventListener('click', (e) => {
-            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
-                shoot();
-            }
+            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) shoot();
         });
 
+        // Touch and desktop button controls — continuous press behavior
         let touchLeftActive = false;
         let touchRightActive = false;
         let touchUpActive = false;
         let touchDownActive = false;
 
+        // Mouse aiming
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
             mouse.isOverCanvas = true;
         });
-
-        canvas.addEventListener('mouseleave', () => {
-            mouse.isOverCanvas = false;
-        });
+        canvas.addEventListener('mouseleave', () => { mouse.isOverCanvas = false; });
 
         function handleMovementInput() {
-            player.dx = 0;
-            player.dy = 0;
-
-            if (keyState['arrowleft'] || keyState['a'] || touchLeftActive) {
-                player.dx = -player.speed;
-            }
-            if (keyState['arrowright'] || keyState['d'] || touchRightActive) {
-                player.dx = player.speed;
-            }
-            if (keyState['arrowup'] || keyState['w'] || touchUpActive) {
-                player.dy = -player.speed;
-            }
-            if (keyState['arrowdown'] || keyState['s'] || touchDownActive) {
-                player.dy = player.speed;
-            }
+            player.dx = 0; player.dy = 0;
+            if (keyState['arrowleft'] || keyState['a'] || touchLeftActive) player.dx = -player.speed;
+            if (keyState['arrowright'] || keyState['d'] || touchRightActive) player.dx = player.speed;
+            if (keyState['arrowup'] || keyState['w'] || touchUpActive) player.dy = -player.speed;
+            if (keyState['arrowdown'] || keyState['s'] || touchDownActive) player.dy = player.speed;
         }
 
         function updatePlayerRotation() {
             const playerCenterX = player.x + player.width / 2;
             const playerCenterY = player.y + player.height / 2;
-
-            if (mouse.isOverCanvas) {
-                player.targetAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
-            } else {
-                player.targetAngle = -Math.PI / 2;
-            }
-
-            // Directly set currentAngle to targetAngle for instant rotation
+            if (mouse.isOverCanvas) player.targetAngle = Math.atan2(mouse.y - playerCenterY, mouse.x - playerCenterX);
+            else player.targetAngle = -Math.PI / 2;
             player.currentAngle = player.targetAngle;
-
             player.currentAngle = (player.currentAngle + Math.PI * 2) % (2 * Math.PI);
             if (player.currentAngle > Math.PI) player.currentAngle -= 2 * Math.PI;
         }
@@ -2191,60 +1667,29 @@
         function updateAimIndicator() {
             const playerCenterX = player.x + player.width / 2;
             const playerCenterY = player.y + player.height / 2;
+            let mouseTargetX = mouse.isOverCanvas ? mouse.x : playerCenterX;
+            let mouseTargetY = mouse.isOverCanvas ? mouse.y : playerCenterY - MAX_AIM_DISTANCE;
 
-            let mouseTargetX = mouse.x;
-            let mouseTargetY = mouse.y;
-
-            // If mouse is not over canvas, aim straight up
-            if (!mouse.isOverCanvas) {
-                mouseTargetX = playerCenterX;
-                mouseTargetY = playerCenterY - MAX_AIM_DISTANCE; // Aim straight up
-            }
-
-            // Calculate raw angle from player to mouse
             let rawAngleToMouse = Math.atan2(mouseTargetY - playerCenterY, mouseTargetX - playerCenterX);
-
-            // Calculate difference between raw angle and player's current angle
             let angleDiffFromPlayer = rawAngleToMouse - player.currentAngle;
-
-            // Normalize angleDiffFromPlayer to be within -PI to PI
             if (angleDiffFromPlayer > Math.PI) angleDiffFromPlayer -= 2 * Math.PI;
             if (angleDiffFromPlayer < -Math.PI) angleDiffFromPlayer += 2 * Math.PI;
-
-            // Clamp this difference to MAX_AIM_ANGLE_RADIANS
             let clampedAngleDiff = Math.max(-MAX_AIM_ANGLE_RADIANS, Math.min(MAX_AIM_ANGLE_RADIANS, angleDiffFromPlayer));
-
-            // Add the clamped difference to player.currentAngle to get the actual aim angle for the indicator
             let actualAimAngle = player.currentAngle + clampedAngleDiff;
 
-            // Calculate the distance from the player to the mouse
-            let distanceToMouse = Math.sqrt( (mouseTargetX - playerCenterX)**2 + (mouseTargetY - playerCenterY)**2 );
-
-            // Clamp this distance to MAX_AIM_DISTANCE
+            let distanceToMouse = Math.sqrt((mouseTargetX - playerCenterX)**2 + (mouseTargetY - playerCenterY)**2);
             let finalDistance = Math.min(distanceToMouse, MAX_AIM_DISTANCE);
 
-            // Use actualAimAngle and finalDistance to set aimIndicator.x and aimIndicator.y
             aimIndicator.x = playerCenterX + finalDistance * Math.cos(actualAimAngle);
             aimIndicator.y = playerCenterY + finalDistance * Math.sin(actualAimAngle);
         }
 
         function gameLoopWithInput() {
             if (!gameRunning || shopOpen || paused || settingsOpen || howToPlayOpen) {
-                // If the loop is not supposed to run, clear the animation frame ID
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
-                // console.log("gameLoop: Not running due to state. gameRunning=", gameRunning, "shopOpen=", shopOpen, "paused=", paused, "settingsOpen=", settingsOpen, "howToPlayOpen=", howToPlayOpen);
-                return; // Exit the loop if game is not running or a menu is open/paused
+                if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+                return;
             }
-
-            // console.log("gameLoop: Running. Canvas dimensions: gameWidth=", gameWidth, "gameHeight=", gameHeight);
-
-            // Clear canvas background
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
-            // console.log("gameLoop: Background cleared.");
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, gameWidth, gameHeight);
 
             handleMovementInput();
             updatePlayerRotation();
@@ -2252,51 +1697,33 @@
 
             updateStars();
             drawStars();
-            // console.log("Stars updated and drawn.");
 
             updatePlayer();
             drawPlayer();
-            // NEW: Draw player hitbox if enabled
             drawPlayerHitbox();
-            // console.log("Player updated and drawn at:", player.x, player.y);
             aimIndicator.draw();
 
             if (bossActive) {
-                updateBoss();
-                boss.draw();
-                // console.log("Boss updated and drawn.");
+                updateBoss(); boss.draw();
             } else {
                 spawnEnemy();
                 updateEnemies();
                 enemies.forEach(enemy => drawGenericEnemy(enemy));
-                // if (enemies.length > 0) {
-                //     console.log("Enemies updated and drawn. First enemy at:", enemies[0].x, enemies[0].y);
-                // }
             }
 
             updateBullets();
             bullets.forEach(drawBullet);
-            // if (bullets.length > 0) {
-            //     console.log("Bullets updated and drawn. First bullet at:", bullets[0].x, bullets[0].y);
-            // }
 
             updateEnemyBullets();
             enemyBullets.forEach(bullet => enemyBulletProps.draw(bullet));
-            // if (enemyBullets.length > 0) {
-            //     console.log("Enemy bullets updated and drawn. First enemy bullet at:", enemyBullets[0].x, enemyBullets[0].y);
-            // }
 
             checkCollisions();
 
             if (flashEffect.active) {
-                ctx.fillStyle = flashEffect.color;
-                ctx.fillRect(0, 0, gameWidth, gameHeight);
-                if (Date.now() - flashEffect.startTime > flashEffect.duration) {
-                    flashEffect.active = false;
-                }
+                ctx.fillStyle = flashEffect.color; ctx.fillRect(0, 0, gameWidth, gameHeight);
+                if (Date.now() - flashEffect.startTime > flashEffect.duration) flashEffect.active = false;
             }
 
-            // Request next frame
             animationFrameId = requestAnimationFrame(gameLoopWithInput);
         }
 
@@ -2309,21 +1736,12 @@
         }
 
         function titleScreenAnimationLoop() {
-            if (gameRunning || shopOpen || settingsOpen || howToPlayOpen) { // Use all menu flags
-                cancelAnimationFrame(titleAnimationId);
-                titleAnimationId = null;
-                return;
+            if (gameRunning || shopOpen || settingsOpen || howToPlayOpen) {
+                cancelAnimationFrame(titleAnimationId); titleAnimationId = null; return;
             }
-
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
-
-            updateStars();
-            drawStars();
-
-            updateTitleScreenPlayer();
-            drawPlayer();
-
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, gameWidth, gameHeight);
+            updateStars(); drawStars();
+            updateTitleScreenPlayer(); drawPlayer();
             titleAnimationId = requestAnimationFrame(titleScreenAnimationLoop);
         }
 
@@ -2337,32 +1755,35 @@
             }
         }
 
-        touchLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchLeftActive = true; });
-        touchLeftBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchLeftActive = false; });
-        touchLeftBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchLeftActive = false; });
+        // Touch buttons: add both touch and mouse for desktop testing
+        function bindPressHold(btn, onDown, onUp) {
+            // Touch
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); onDown(); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); onUp(); });
+            btn.addEventListener('touchcancel', (e) => { e.preventDefault(); onUp(); });
+            // Mouse (desktop)
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(); });
+            btn.addEventListener('mouseup', (e) => { e.preventDefault(); onUp(); });
+            btn.addEventListener('mouseleave', (e) => { e.preventDefault(); onUp(); });
+        }
 
-        touchRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchRightActive = true; });
-        touchRightBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchRightActive = false; });
-        touchRightBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchRightActive = false; });
+        bindPressHold(touchLeftBtn, () => { touchLeftActive = true; }, () => { touchLeftActive = false; });
+        bindPressHold(touchRightBtn, () => { touchRightActive = true; }, () => { touchRightActive = false; });
+        bindPressHold(touchShootBtn, () => {
+            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) shoot();
+        }, () => { /* no hold needed for shooting */ });
 
-        touchShootBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameRunning && !paused && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
-                shoot();
-            }
-        });
-
-        // Create and append vertical touch buttons
+        // Create and append vertical touch buttons (Up/Down)
         const touchUpBtn = document.createElement('button');
-        touchUpBtn.id = 'touchUpBtn';
-        touchUpBtn.textContent = '▲';
-        touchUpBtn.classList.add('touch-control-vertical'); // Use a generic class for styling
-        document.querySelector('.touch-controls').insertBefore(touchUpBtn, touchShootBtn);
-
+        touchUpBtn.id = 'touchUpBtn'; touchUpBtn.textContent = '▲';
         const touchDownBtn = document.createElement('button');
-        touchDownBtn.id = 'touchDownBtn';
-        touchDownBtn.textContent = '▼';
-        touchDownBtn.classList.add('touch-control-vertical'); // Use a generic class for styling
+        touchDownBtn.id = 'touchDownBtn'; touchDownBtn.textContent = '▼';
+
+        // Style reuse via class
+        touchUpBtn.classList.add('touch-control-vertical');
+        touchDownBtn.classList.add('touch-control-vertical');
+
+        document.querySelector('.touch-controls').insertBefore(touchUpBtn, touchShootBtn);
         document.querySelector('.touch-controls').insertBefore(touchDownBtn, touchShootBtn.nextSibling);
 
         // Add styling for vertical touch buttons (similar to existing touch buttons)
@@ -2374,58 +1795,43 @@
                 color: white;
                 border: 2px solid #a0aec0;
                 border-radius: 50%;
-                width: 70px;
-                height: 70px;
+                width: 72px; height: 72px;
                 font-size: 28px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                user-select: none;
-                -webkit-user-select: none;
-                -ms-user-select: none;
+                display: flex; align-items: center; justify-content: center;
+                user-select: none; -webkit-user-select: none; -ms-user-select: none;
                 box-shadow: 0 6px 10px rgba(0,0,0,0.4);
-                transition: all 0.2s ease-in-out;
+                transition: transform 0.08s ease-out, opacity 0.08s ease-out;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                opacity: 0.95;
             }
-            .touch-control-vertical:active {
-                background: linear-gradient(to bottom, #2d3748, #1a202c);
-                transform: scale(0.9);
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
+            .touch-control-vertical:active { transform: scale(0.92); opacity: 0.85; }
         `;
         document.head.appendChild(styleSheet);
 
+        // Bind up/down continuous movement
+        bindPressHold(touchUpBtn, () => { touchUpActive = true; }, () => { touchUpActive = false; });
+        bindPressHold(touchDownBtn, () => { touchDownActive = true; }, () => { touchDownActive = false; });
 
-        touchUpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchUpActive = true; });
-        touchUpBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchUpActive = false; });
-        touchUpBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchUpActive = false; });
-
-        touchDownBtn.addEventListener('touchstart', (e) => { e.preventDefault(); touchDownActive = true; });
-        touchDownBtn.addEventListener('touchend', (e) => { e.preventDefault(); touchDownActive = false; });
-        touchDownBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); touchDownActive = false; });
-
+        // UI events
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', startGame);
         shopButton.addEventListener('click', openShop);
         closeShopBtn.addEventListener('click', closeShop);
         pauseButton.addEventListener('click', togglePause);
-        settingsButtonTitle.addEventListener('click', openSettings); // Event listener for title settings button
-        settingsButtonInGame.addEventListener('click', openSettings); // Event listener for in-game settings button
-        closeSettingsBtn.addEventListener('click', closeSettings); // Event listener for close settings button
-        soundToggle.addEventListener('change', toggleSound); // Event listener for sound toggle
-        starsToggle.addEventListener('change', toggleStars); // Event listener for stars toggle
-        hitboxToggle.addEventListener('change', toggleHitboxes); // NEW: Event listener for hitbox toggle
-        howToPlayButtonTitle.addEventListener('click', openHowToPlay); // Event listener for how to play button
-        closeHowToPlayBtn.addEventListener('click', closeHowToPlay); // Event listener for close how to play button
+        settingsButtonTitle.addEventListener('click', openSettings);
+        settingsButtonInGame.addEventListener('click', openSettings);
+        closeSettingsBtn.addEventListener('click', closeSettings);
+        soundToggle.addEventListener('change', toggleSound);
+        starsToggle.addEventListener('change', toggleStars);
+        hitboxToggle.addEventListener('change', toggleHitboxes);
+        howToPlayButtonTitle.addEventListener('click', openHowToPlay);
+        closeHowToPlayBtn.addEventListener('click', closeHowToPlay);
+        touchToggle.addEventListener('change', toggleTouchControls);
 
         window.addEventListener('resize', () => {
             resizeCanvas();
-            if (!gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) { // Use all menu flags
-                startTitleAnimation();
-            }
-            if (shopOpen) {
-                renderShopItems();
-            }
+            if (!gameRunning && !shopOpen && !settingsOpen && !howToPlayOpen) startTitleAnimation();
+            if (shopOpen) renderShopItems();
         });
 
         window.onload = () => {
@@ -2438,93 +1844,73 @@
 
             resizeCanvas();
             updateScoreDisplay();
-            updateHealthDisplay(); // Initial update for the new HTML health bar
+            updateHealthDisplay();
             initializeStars();
 
             messageText.textContent = "That Shooting Game";
             messageDisplay.style.display = 'flex';
             startButton.classList.remove('hidden');
             restartButton.classList.add('hidden');
-            howToPlayButtonTitle.classList.remove('hidden'); // Show how to play button on initial load
-            settingsButtonTitle.classList.remove('hidden'); // Show settings button on initial load
+            howToPlayButtonTitle.classList.remove('hidden');
+            settingsButtonTitle.classList.remove('hidden');
 
             scoreBoard.classList.add('hidden');
             waveBoard.classList.add('hidden');
-            healthBarDisplay.classList.add('hidden'); // Hide the new health bar initially
+            healthBarDisplay.classList.add('hidden');
             shopButton.classList.add('hidden');
             pauseButton.classList.add('hidden');
-            settingsButtonInGame.classList.add('hidden'); // Hide in-game settings button initially
-            shopDisplay.style.display = 'none'; // Ensure hidden
-            settingsDisplay.style.display = 'none'; // Ensure hidden
-            howToPlayDisplay.style.display = 'none'; // Ensure hidden
+            settingsButtonInGame.classList.add('hidden');
+            shopDisplay.style.display = 'none';
+            settingsDisplay.style.display = 'none';
+            howToPlayDisplay.style.display = 'none';
 
             // Initialize toggle states
             soundToggle.checked = soundEnabled;
             Tone.Master.mute = !soundEnabled;
             starsToggle.checked = starsEnabled;
-            hitboxToggle.checked = showHitboxes; // NEW: Initialize hitbox toggle state
+            hitboxToggle.checked = showHitboxes;
+
+            // Touch controls: default OFF for desktop testing; mobile shows via media query but can be forced here
+            touchToggle.checked = touchControlsEnabled;
+            applyTouchControlsVisibility();
 
             startTitleAnimation();
             console.log("Window onload finished. gameRunning:", gameRunning);
         };
 
         // --- Console Commands for Playtesting ---
-        /**
-         * Advances the game to the next wave.
-         * Can be called from the browser's developer console for playtesting.
-         */
         window.advanceWave = function() {
-            if (!gameRunning) {
-                console.warn("Game is not running. Start the game before advancing waves.");
-                return;
-            }
-
+            if (!gameRunning) { console.warn("Game is not running. Start the game before advancing waves."); return; }
             if (bossActive) {
                 defeatBoss();
                 console.log(`[Console Command] Boss defeated! Advancing to Wave ${wave}.`);
             } else {
-                enemiesDefeatedInWave = enemiesRequiredForWave; // Fulfill current wave
-                // Trigger wave progression logic
+                enemiesDefeatedInWave = enemiesRequiredForWave;
                 if (!bossActive && enemiesDefeatedInWave >= enemiesRequiredForWave) {
                     wave++;
                     enemiesDefeatedInWave = 0;
                     enemyProps.spawnInterval = Math.max(50, baseSpawnInterval - ((wave - 1) % wavesPerBoss) * spawnIntervalDecreasePerWave);
-                    console.log(`[Console Command] Wave ${wave} - New Spawn Interval: ${enemyProps.spawnInterval}`);
                     updateScoreDisplay();
                     showOverlayMessage(`Wave ${wave} Incoming!`);
-
                     if ((wave - 1) % wavesPerBoss === 0 && wave > 1) {
-                        console.log(`[Console Command] Time for a boss fight (from advanceWave)! Current wave: ${wave}`);
-                        enemies.length = 0; // Clear remaining enemies
+                        enemies.length = 0;
                         startBossFight();
                     }
                 }
                 console.log(`[Console Command] Advanced to Wave ${wave}.`);
             }
-            enemies.length = 0; // Clear any remaining enemies
-            enemyBullets.length = 0; // Clear any remaining enemy bullets
+            enemies.length = 0;
+            enemyBullets.length = 0;
         };
 
-        /**
-         * Gives the player a specified amount of score.
-         * @param {number} amount - The amount of score to add.
-         */
         window.addScore = function(amount) {
-            if (typeof amount !== 'number' || amount <= 0) {
-                console.warn("Please provide a positive number for the score amount.");
-                return;
-            }
-            score += amount;
-            updateScoreDisplay();
+            if (typeof amount !== 'number' || amount <= 0) { console.warn("Please provide a positive number for the score amount."); return; }
+            score += amount; updateScoreDisplay();
             console.log(`[Console Command] Added ${amount} score. Current score: ${score}`);
         };
 
-        /**
-         * Restores player health to maximum.
-         */
         window.fullHeal = function() {
-            playerHealth = playerMaxHealth;
-            updateHealthDisplay();
+            playerHealth = playerMaxHealth; updateHealthDisplay();
             console.log("[Console Command] Player health fully restored!");
         };
     </script>
